@@ -1,14 +1,12 @@
 package no.ikov.deliveryservice.infrastructure.dto;
 
 import lombok.Getter;
-import lombok.Setter;
 import no.ikov.deliveryservice.domain.model.Delivery;
 import no.ikov.deliveryservice.domain.model.DeliveryStatus;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
 public class DeliveryResponse {
 
     private Long id;
@@ -23,27 +21,27 @@ public class DeliveryResponse {
 
     public static DeliveryResponse from(Delivery delivery) {
         DeliveryResponse response = new DeliveryResponse();
-        response.setId(delivery.getId());
-        response.setOrderId(delivery.getOrderId());
-        response.setStatus(delivery.getStatus());
-        response.setEstimatedDeliveryAt(delivery.getEstimatedDeliveryAt());
-        response.setActualDeliveryAt(delivery.getActualDeliveryAt());
-        response.setCreatedAt(delivery.getCreatedAt());
-        response.setUpdatedAt(delivery.getUpdatedAt());
+        response.id = delivery.getId();
+        response.orderId = delivery.getOrderId();
+        response.status = delivery.getStatus();
+        response.estimatedDeliveryAt = delivery.getEstimatedDeliveryAt();
+        response.actualDeliveryAt = delivery.getActualDeliveryAt();
+        response.createdAt = delivery.getCreatedAt();
+        response.updatedAt = delivery.getUpdatedAt();
 
-        response.setDeliveryAddress(new DeliveryAddressResponse(
+        response.deliveryAddress = new DeliveryAddressResponse(
                 delivery.getDeliveryAddress().getStreet(),
                 delivery.getDeliveryAddress().getCity(),
                 delivery.getDeliveryAddress().getPostalCode(),
                 delivery.getDeliveryAddress().getCountry()
-        ));
+        );
 
         if (delivery.getCourier() != null) {
-            response.setCourier(new CourierResponse(
+            response.courier = new CourierResponse(
                     delivery.getCourier().getCourierId(),
                     delivery.getCourier().getName(),
                     delivery.getCourier().getPhone()
-            ));
+            );
         }
 
         return response;

@@ -18,9 +18,9 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
-        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(InvalidDeliveryStateException.class)
+    public ProblemDetail handleInvalidDeliveryState(InvalidDeliveryStateException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
         problem.setDetail(ex.getMessage());
         return problem;
     }

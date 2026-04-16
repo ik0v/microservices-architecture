@@ -12,6 +12,7 @@ import no.ikov.deliveryservice.infrastructure.dto.UpdateCourierRequest;
 import no.ikov.deliveryservice.infrastructure.dto.UpdateDeliveryAddressRequest;
 import no.ikov.deliveryservice.infrastructure.dto.UpdateDeliveryStatusRequest;
 import no.ikov.deliveryservice.infrastructure.exceptions.DeliveryNotFoundException;
+import no.ikov.deliveryservice.infrastructure.exceptions.InvalidDeliveryStateException;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -58,6 +59,14 @@ public class DeliveryService {
     public DeliveryResponse updateCourier(Long id, UpdateCourierRequest request) {
         Delivery delivery = deliveryRepository.findById(id)
                 .orElseThrow(() -> new DeliveryNotFoundException(id));
+
+        Set<DeliveryStatus> allowedStatuses = Set.of(DeliveryStatus.PENDING, DeliveryStatus.ASSIGNED);
+        if (!allowedStatuses.contains(delivery.getStatus())) {
+            throw new InvalidDeliveryStateException(
+                    "Courier can only be assigned when status is PENDING or ASSIGNED"
+            );
+        }
+
         delivery.setCourier(new Courier(request.getCourierId(), request.getName(), request.getPhone()));
         return DeliveryResponse.from(deliveryRepository.save(delivery));
     }
@@ -69,7 +78,7 @@ public class DeliveryService {
 
         Set<DeliveryStatus> allowedStatuses = Set.of(DeliveryStatus.PENDING, DeliveryStatus.ASSIGNED);
         if (!allowedStatuses.contains(delivery.getStatus())) {
-            throw new IllegalArgumentException(
+            throw new InvalidDeliveryStateException(
                     "Delivery address can only be updated when status is PENDING or ASSIGNED"
             );
         }
