@@ -1,0 +1,10 @@
+package no.ikov.deliveryservice.domain.model;
+
+public enum DeliveryStatus {
+    PENDING,
+    ASSIGNED,
+    PICKED_UP,
+    IN_TRANSIT,
+    DELIVERED,
+    FAILED
+}
