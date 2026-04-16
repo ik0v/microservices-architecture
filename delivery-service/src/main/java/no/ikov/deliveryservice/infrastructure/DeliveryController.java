@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,6 +49,12 @@ public class DeliveryController {
     @PatchMapping("/{id}/address")
     public ResponseEntity<DeliveryResponse> updateAddress(@PathVariable Long id, @RequestBody @Valid UpdateDeliveryAddressRequest request) {
         return ResponseEntity.ok(deliveryService.updateAddress(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDelivery(@PathVariable Long id) {
+        deliveryService.deleteDelivery(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")

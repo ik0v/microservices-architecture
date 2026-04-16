@@ -94,4 +94,12 @@ public class DeliveryService {
     public Page<DeliveryResponse> getAllDeliveries(Pageable pageable) {
         return deliveryRepository.findAll(pageable).map(DeliveryResponse::from);
     }
+
+    @Transactional
+    public void deleteDelivery(Long id) {
+        if (!deliveryRepository.existsById(id)) {
+            throw new DeliveryNotFoundException(id);
+        }
+        deliveryRepository.deleteById(id);
+    }
 }
