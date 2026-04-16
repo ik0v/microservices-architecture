@@ -17,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
@@ -132,9 +135,7 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderResponse> getAllOrders() {
-        return orderRepository.findAll().stream()
-                .map(OrderResponse::from)
-                .toList();
+    public Page<OrderResponse> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable).map(OrderResponse::from);
     }
 }
