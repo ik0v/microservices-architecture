@@ -1,4 +1,4 @@
-package no.ikov.orderservice.infrastructure.rest;
+package no.ikov.orderservice.infrastructure.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;

@@ -1,4 +1,4 @@
-package no.ikov.orderservice.infrastructure.rest;
+package no.ikov.orderservice.infrastructure.exceptions;
 
 public class OrderNotFoundException extends RuntimeException {
 

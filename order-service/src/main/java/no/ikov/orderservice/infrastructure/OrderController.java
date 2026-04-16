@@ -1,4 +1,4 @@
-package no.ikov.orderservice.infrastructure.rest;
+package no.ikov.orderservice.infrastructure;
 
 import lombok.RequiredArgsConstructor;
 import no.ikov.orderservice.application.OrderService;
@@ -8,6 +8,7 @@ import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -47,6 +48,12 @@ public class OrderController {
     @PutMapping("/{id}/items")
     public ResponseEntity<OrderResponse> updateOrderItems(@PathVariable Long id, @RequestBody UpdateOrderItemsRequest request) {
         return ResponseEntity.ok(orderService.updateOrderItems(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+        orderService.deleteOrder(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")

@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import no.ikov.orderservice.infrastructure.rest.OrderNotFoundException;
+import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -121,6 +121,14 @@ public class OrderService {
         order.setTotalPrice(new Price(total, items.getFirst().getUnitPrice().getCurrency()));
 
         return OrderResponse.from(orderRepository.save(order));
+    }
+
+    @Transactional
+    public void deleteOrder(Long id) {
+        if (!orderRepository.existsById(id)) {
+            throw new OrderNotFoundException(id);
+        }
+        orderRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
