@@ -47,6 +47,7 @@ public class Delivery {
 
     @PrePersist
     private void onCreate() {
+        createdAt = LocalDateTime.now();
         updatedAt = createdAt;
     }
 
