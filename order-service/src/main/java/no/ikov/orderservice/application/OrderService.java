@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Currency;
+
 import java.util.List;
 
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
@@ -57,13 +59,7 @@ public class OrderService {
                 .toList();
 
         order.setItems(items);
-
-        // Total is sum of (unitAmount * quantity) — currency taken from first item
-        BigDecimal total = items.stream()
-                .map(i -> i.getUnitPrice().getAmount().multiply(BigDecimal.valueOf(i.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        order.setTotalPrice(new Price(total, items.getFirst().getUnitPrice().getCurrency()));
+        order.setTotalPrice(calculateTotalPrice(items));
 
         return OrderResponse.from(orderRepository.save(order));
     }
@@ -116,12 +112,7 @@ public class OrderService {
                 .toList();
 
         order.setItems(items);
-
-        BigDecimal total = items.stream()
-                .map(i -> i.getUnitPrice().getAmount().multiply(BigDecimal.valueOf(i.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        order.setTotalPrice(new Price(total, items.getFirst().getUnitPrice().getCurrency()));
+        order.setTotalPrice(calculateTotalPrice(items));
 
         return OrderResponse.from(orderRepository.save(order));
     }
@@ -132,6 +123,22 @@ public class OrderService {
             throw new OrderNotFoundException(id);
         }
         orderRepository.deleteById(id);
+    }
+
+    private Price calculateTotalPrice(List<OrderItem> items) {
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("Order must contain at least one item");
+        }
+        Currency currency = items.getFirst().getUnitPrice().getCurrency();
+        boolean mixedCurrencies = items.stream()
+                .anyMatch(i -> !i.getUnitPrice().getCurrency().equals(currency));
+        if (mixedCurrencies) {
+            throw new IllegalArgumentException("All order items must share the same currency");
+        }
+        BigDecimal total = items.stream()
+                .map(i -> i.getUnitPrice().getAmount().multiply(BigDecimal.valueOf(i.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new Price(total, currency);
     }
 
     @Transactional(readOnly = true)

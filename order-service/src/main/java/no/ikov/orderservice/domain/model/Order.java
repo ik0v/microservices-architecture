@@ -31,6 +31,19 @@ public class Order {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    private void onCreate() {
+        updatedAt = createdAt;
+    }
+
+    @PreUpdate
+    private void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
     @Embedded
     // Price fields renamed to avoid column name conflict if another Price is embedded later
     @AttributeOverrides({

@@ -21,6 +21,7 @@ public class OrderResponse {
     private BigDecimal totalAmount;
     private Currency totalCurrency;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static OrderResponse from(Order order) {
         OrderResponse response = new OrderResponse();
@@ -28,6 +29,7 @@ public class OrderResponse {
         response.setCustomerId(order.getCustomerId());
         response.setStatus(order.getStatus());
         response.setCreatedAt(order.getCreatedAt());
+        response.setUpdatedAt(order.getUpdatedAt());
         response.setTotalAmount(order.getTotalPrice().getAmount());
         response.setTotalCurrency(order.getTotalPrice().getCurrency());
 
