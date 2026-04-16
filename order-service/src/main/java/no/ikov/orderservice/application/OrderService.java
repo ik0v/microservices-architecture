@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import no.ikov.orderservice.infrastructure.rest.OrderNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -58,5 +59,19 @@ public class OrderService {
         order.setTotalPrice(new Price(total, items.getFirst().getUnitPrice().getCurrency()));
 
         return OrderResponse.from(orderRepository.save(order));
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(Long id) {
+        return orderRepository.findById(id)
+                .map(OrderResponse::from)
+                .orElseThrow(() -> new OrderNotFoundException(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAll().stream()
+                .map(OrderResponse::from)
+                .toList();
     }
 }
