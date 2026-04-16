@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,24 +30,24 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest request) {
+    public ResponseEntity<OrderResponse> createOrder(@RequestBody @Valid OrderRequest request) {
         OrderResponse response = orderService.createOrder(request);
         URI location = URI.create("/orders/" + response.getId());
         return ResponseEntity.created(location).body(response);
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<OrderResponse> updateOrderStatus(@PathVariable Long id, @RequestBody UpdateOrderStatusRequest request) {
+    public ResponseEntity<OrderResponse> updateOrderStatus(@PathVariable Long id, @RequestBody @Valid UpdateOrderStatusRequest request) {
         return ResponseEntity.ok(orderService.updateOrderStatus(id, request));
     }
 
     @PatchMapping("/{id}/address")
-    public ResponseEntity<OrderResponse> updateOrderAddress(@PathVariable Long id, @RequestBody UpdateOrderAddressRequest request) {
+    public ResponseEntity<OrderResponse> updateOrderAddress(@PathVariable Long id, @RequestBody @Valid UpdateOrderAddressRequest request) {
         return ResponseEntity.ok(orderService.updateOrderAddress(id, request));
     }
 
     @PutMapping("/{id}/items")
-    public ResponseEntity<OrderResponse> updateOrderItems(@PathVariable Long id, @RequestBody UpdateOrderItemsRequest request) {
+    public ResponseEntity<OrderResponse> updateOrderItems(@PathVariable Long id, @RequestBody @Valid UpdateOrderItemsRequest request) {
         return ResponseEntity.ok(orderService.updateOrderItems(id, request));
     }
 
