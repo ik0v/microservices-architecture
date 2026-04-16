@@ -5,8 +5,18 @@ import no.ikov.deliveryservice.domain.model.Delivery;
 import no.ikov.deliveryservice.domain.model.DeliveryAddress;
 import no.ikov.deliveryservice.domain.model.DeliveryStatus;
 import no.ikov.deliveryservice.domain.repository.DeliveryRepository;
+import no.ikov.deliveryservice.domain.model.Courier;
 import no.ikov.deliveryservice.infrastructure.dto.DeliveryRequest;
 import no.ikov.deliveryservice.infrastructure.dto.DeliveryResponse;
+import no.ikov.deliveryservice.infrastructure.dto.UpdateCourierRequest;
+import no.ikov.deliveryservice.infrastructure.dto.UpdateDeliveryAddressRequest;
+import no.ikov.deliveryservice.infrastructure.dto.UpdateDeliveryStatusRequest;
+import no.ikov.deliveryservice.infrastructure.exceptions.DeliveryNotFoundException;
+
+import java.time.LocalDateTime;
+import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,5 +41,57 @@ public class DeliveryService {
         delivery.setEstimatedDeliveryAt(request.getEstimatedDeliveryAt());
 
         return DeliveryResponse.from(deliveryRepository.save(delivery));
+    }
+
+    @Transactional
+    public DeliveryResponse updateStatus(Long id, UpdateDeliveryStatusRequest request) {
+        Delivery delivery = deliveryRepository.findById(id)
+                .orElseThrow(() -> new DeliveryNotFoundException(id));
+        delivery.setStatus(request.getStatus());
+        if (request.getStatus() == DeliveryStatus.DELIVERED) {
+            delivery.setActualDeliveryAt(LocalDateTime.now());
+        }
+        return DeliveryResponse.from(deliveryRepository.save(delivery));
+    }
+
+    @Transactional
+    public DeliveryResponse updateCourier(Long id, UpdateCourierRequest request) {
+        Delivery delivery = deliveryRepository.findById(id)
+                .orElseThrow(() -> new DeliveryNotFoundException(id));
+        delivery.setCourier(new Courier(request.getCourierId(), request.getName(), request.getPhone()));
+        return DeliveryResponse.from(deliveryRepository.save(delivery));
+    }
+
+    @Transactional
+    public DeliveryResponse updateAddress(Long id, UpdateDeliveryAddressRequest request) {
+        Delivery delivery = deliveryRepository.findById(id)
+                .orElseThrow(() -> new DeliveryNotFoundException(id));
+
+        Set<DeliveryStatus> allowedStatuses = Set.of(DeliveryStatus.PENDING, DeliveryStatus.ASSIGNED);
+        if (!allowedStatuses.contains(delivery.getStatus())) {
+            throw new IllegalArgumentException(
+                    "Delivery address can only be updated when status is PENDING or ASSIGNED"
+            );
+        }
+
+        delivery.setDeliveryAddress(new DeliveryAddress(
+                request.getDeliveryAddress().getStreet(),
+                request.getDeliveryAddress().getCity(),
+                request.getDeliveryAddress().getPostalCode(),
+                request.getDeliveryAddress().getCountry()
+        ));
+        return DeliveryResponse.from(deliveryRepository.save(delivery));
+    }
+
+    @Transactional(readOnly = true)
+    public DeliveryResponse getDeliveryById(Long id) {
+        return deliveryRepository.findById(id)
+                .map(DeliveryResponse::from)
+                .orElseThrow(() -> new DeliveryNotFoundException(id));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DeliveryResponse> getAllDeliveries(Pageable pageable) {
+        return deliveryRepository.findAll(pageable).map(DeliveryResponse::from);
     }
 }
