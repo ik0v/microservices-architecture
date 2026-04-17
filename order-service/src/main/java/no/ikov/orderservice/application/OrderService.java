@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import no.ikov.orderservice.domain.model.DeliveryAddress;
 import no.ikov.orderservice.domain.model.Order;
 import no.ikov.orderservice.domain.model.OrderItem;
-import no.ikov.orderservice.domain.model.OrderStatus;
 import no.ikov.orderservice.domain.model.Price;
 import no.ikov.orderservice.domain.repository.OrderRepository;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
@@ -12,19 +11,15 @@ import no.ikov.orderservice.infrastructure.dto.OrderResponse;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
+import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-
-import java.util.Currency;
+import no.ikov.orderservice.infrastructure.dto.OrderItemRequest;
 
 import java.util.List;
-
-import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -34,33 +29,14 @@ public class OrderService {
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
-        Order order = new Order();
-        order.setCustomerId(request.getCustomerId());
-        order.setStatus(OrderStatus.CREATED);
-        order.setCreatedAt(LocalDateTime.now());
-
-        DeliveryAddress address = new DeliveryAddress();
-        address.setStreet(request.getDeliveryAddress().getStreet());
-        address.setCity(request.getDeliveryAddress().getCity());
-        address.setPostalCode(request.getDeliveryAddress().getPostalCode());
-        address.setCountry(request.getDeliveryAddress().getCountry());
-        order.setDeliveryAddress(address);
-
-        List<OrderItem> items = request.getItems().stream()
-                .map(itemRequest -> {
-                    OrderItem item = new OrderItem();
-                    item.setOrder(order);
-                    item.setProductId(itemRequest.getProductId());
-                    item.setProductName(itemRequest.getProductName());
-                    item.setQuantity(itemRequest.getQuantity());
-                    item.setUnitPrice(new Price(itemRequest.getUnitPrice().getAmount(), itemRequest.getUnitPrice().getCurrency()));
-                    return item;
-                })
-                .toList();
-
-        order.setItems(items);
-        order.setTotalPrice(calculateTotalPrice(items));
-
+        DeliveryAddress address = new DeliveryAddress(
+                request.getDeliveryAddress().getStreet(),
+                request.getDeliveryAddress().getCity(),
+                request.getDeliveryAddress().getPostalCode(),
+                request.getDeliveryAddress().getCountry()
+        );
+        List<OrderItem> items = mapItems(request.getItems());
+        Order order = new Order(request.getCustomerId(), address, items);
         return OrderResponse.from(orderRepository.save(order));
     }
 
@@ -71,11 +47,16 @@ public class OrderService {
                 .orElseThrow(() -> new OrderNotFoundException(id));
     }
 
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable).map(OrderResponse::from);
+    }
+
     @Transactional
     public OrderResponse updateOrderStatus(Long id, UpdateOrderStatusRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
-        order.setStatus(request.getStatus());
+        order.transitionTo(request.getStatus());
         return OrderResponse.from(orderRepository.save(order));
     }
 
@@ -83,14 +64,12 @@ public class OrderService {
     public OrderResponse updateOrderAddress(Long id, UpdateOrderAddressRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
-
-        DeliveryAddress address = new DeliveryAddress();
-        address.setStreet(request.getDeliveryAddress().getStreet());
-        address.setCity(request.getDeliveryAddress().getCity());
-        address.setPostalCode(request.getDeliveryAddress().getPostalCode());
-        address.setCountry(request.getDeliveryAddress().getCountry());
-        order.setDeliveryAddress(address);
-
+        order.updateAddress(new DeliveryAddress(
+                request.getDeliveryAddress().getStreet(),
+                request.getDeliveryAddress().getCity(),
+                request.getDeliveryAddress().getPostalCode(),
+                request.getDeliveryAddress().getCountry()
+        ));
         return OrderResponse.from(orderRepository.save(order));
     }
 
@@ -98,22 +77,7 @@ public class OrderService {
     public OrderResponse updateOrderItems(Long id, UpdateOrderItemsRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
-
-        List<OrderItem> items = request.getItems().stream()
-                .map(itemRequest -> {
-                    OrderItem item = new OrderItem();
-                    item.setOrder(order);
-                    item.setProductId(itemRequest.getProductId());
-                    item.setProductName(itemRequest.getProductName());
-                    item.setQuantity(itemRequest.getQuantity());
-                    item.setUnitPrice(new Price(itemRequest.getUnitPrice().getAmount(), itemRequest.getUnitPrice().getCurrency()));
-                    return item;
-                })
-                .toList();
-
-        order.setItems(items);
-        order.setTotalPrice(calculateTotalPrice(items));
-
+        order.replaceItems(mapItems(request.getItems()));
         return OrderResponse.from(orderRepository.save(order));
     }
 
@@ -125,24 +89,14 @@ public class OrderService {
         orderRepository.deleteById(id);
     }
 
-    private Price calculateTotalPrice(List<OrderItem> items) {
-        if (items.isEmpty()) {
-            throw new IllegalArgumentException("Order must contain at least one item");
-        }
-        Currency currency = items.getFirst().getUnitPrice().getCurrency();
-        boolean mixedCurrencies = items.stream()
-                .anyMatch(i -> !i.getUnitPrice().getCurrency().equals(currency));
-        if (mixedCurrencies) {
-            throw new IllegalArgumentException("All order items must share the same currency");
-        }
-        BigDecimal total = items.stream()
-                .map(i -> i.getUnitPrice().getAmount().multiply(BigDecimal.valueOf(i.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new Price(total, currency);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<OrderResponse> getAllOrders(Pageable pageable) {
-        return orderRepository.findAll(pageable).map(OrderResponse::from);
+    private List<OrderItem> mapItems(List<OrderItemRequest> itemRequests) {
+        return itemRequests.stream()
+                .map(r -> new OrderItem(
+                        r.getProductId(),
+                        r.getProductName(),
+                        r.getQuantity(),
+                        new Price(r.getUnitPrice().getAmount(), r.getUnitPrice().getCurrency())
+                ))
+                .toList();
     }
 }
