@@ -3,12 +3,14 @@ package no.ikov.deliveryservice.domain.model;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "deliveries")
 public class Delivery {
@@ -35,6 +37,7 @@ public class Delivery {
     private LocalDateTime estimatedDeliveryAt;
 
     // Null until delivery is completed (status = DELIVERED)
+    @Setter(AccessLevel.NONE)
     private LocalDateTime actualDeliveryAt;
 
     @Column(nullable = false, updatable = false)
@@ -44,6 +47,20 @@ public class Delivery {
     @Column(nullable = false)
     @Setter(AccessLevel.NONE)
     private LocalDateTime updatedAt;
+
+    public Delivery(Long orderId, DeliveryAddress deliveryAddress, LocalDateTime estimatedDeliveryAt) {
+        this.orderId = orderId;
+        this.deliveryAddress = deliveryAddress;
+        this.estimatedDeliveryAt = estimatedDeliveryAt;
+        this.status = DeliveryStatus.PENDING;
+    }
+
+    public void transitionTo(DeliveryStatus newStatus) {
+        this.status = newStatus;
+        if (newStatus == DeliveryStatus.DELIVERED) {
+            this.actualDeliveryAt = LocalDateTime.now();
+        }
+    }
 
     @PrePersist
     private void onCreate() {

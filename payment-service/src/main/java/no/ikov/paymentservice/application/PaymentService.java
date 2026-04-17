@@ -26,7 +26,7 @@ public class PaymentService {
                 request.getPrice().getAmount(),
                 Currency.getInstance(request.getPrice().getCurrency())
         );
-        Payment payment = Payment.create(
+        Payment payment = new Payment(
                 request.getOrderId(),
                 request.getCustomerId(),
                 price,

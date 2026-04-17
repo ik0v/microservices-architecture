@@ -58,14 +58,12 @@ public class Payment {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    public static Payment create(Long orderId, Long customerId, Price price, PaymentMethod method) {
-        Payment payment = new Payment();
-        payment.orderId = orderId;
-        payment.customerId = customerId;
-        payment.price = price;
-        payment.method = method;
-        payment.status = PaymentStatus.PENDING;
-        return payment;
+    public Payment(Long orderId, Long customerId, Price price, PaymentMethod method) {
+        this.orderId = orderId;
+        this.customerId = customerId;
+        this.price = price;
+        this.method = method;
+        this.status = PaymentStatus.PENDING;
     }
 
     public void complete(String transactionId) {

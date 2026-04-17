@@ -14,7 +14,6 @@ import no.ikov.deliveryservice.infrastructure.dto.UpdateDeliveryStatusRequest;
 import no.ikov.deliveryservice.infrastructure.exceptions.DeliveryNotFoundException;
 import no.ikov.deliveryservice.infrastructure.exceptions.InvalidDeliveryStateException;
 
-import java.time.LocalDateTime;
 import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,17 +29,16 @@ public class DeliveryService {
 
     @Transactional
     public DeliveryResponse createDelivery(DeliveryRequest request) {
-        Delivery delivery = new Delivery();
-        delivery.setOrderId(request.getOrderId());
-        delivery.setStatus(DeliveryStatus.PENDING);
-        delivery.setDeliveryAddress(new DeliveryAddress(
-                request.getDeliveryAddress().getStreet(),
-                request.getDeliveryAddress().getCity(),
-                request.getDeliveryAddress().getPostalCode(),
-                request.getDeliveryAddress().getCountry()
-        ));
-        delivery.setEstimatedDeliveryAt(request.getEstimatedDeliveryAt());
-
+        Delivery delivery = new Delivery(
+                request.getOrderId(),
+                new DeliveryAddress(
+                        request.getDeliveryAddress().getStreet(),
+                        request.getDeliveryAddress().getCity(),
+                        request.getDeliveryAddress().getPostalCode(),
+                        request.getDeliveryAddress().getCountry()
+                ),
+                request.getEstimatedDeliveryAt()
+        );
         return DeliveryResponse.from(deliveryRepository.save(delivery));
     }
 
@@ -48,10 +46,7 @@ public class DeliveryService {
     public DeliveryResponse updateStatus(Long id, UpdateDeliveryStatusRequest request) {
         Delivery delivery = deliveryRepository.findById(id)
                 .orElseThrow(() -> new DeliveryNotFoundException(id));
-        delivery.setStatus(request.getStatus());
-        if (request.getStatus() == DeliveryStatus.DELIVERED) {
-            delivery.setActualDeliveryAt(LocalDateTime.now());
-        }
+        delivery.transitionTo(request.getStatus());
         return DeliveryResponse.from(deliveryRepository.save(delivery));
     }
 
