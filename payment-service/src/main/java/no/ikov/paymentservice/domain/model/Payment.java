@@ -11,7 +11,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import no.ikov.paymentservice.infrastructure.exceptions.InvalidPaymentStateException;
 
 import java.time.LocalDateTime;
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 @Getter
 @Entity
 @Table(name = "payments")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Payment {
 
     @Id
@@ -54,8 +57,6 @@ public class Payment {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
-
-    protected Payment() {}
 
     public static Payment create(Long orderId, Long customerId, Price price, PaymentMethod method) {
         Payment payment = new Payment();
