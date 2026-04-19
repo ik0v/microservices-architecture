@@ -10,10 +10,10 @@ import no.ikov.orderservice.domain.repository.OrderRepository;
 import no.ikov.orderservice.infrastructure.dto.OrderItemRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderResponse;
+import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
-import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
 import no.ikov.orderservice.integration.payment.client.feign.PaymentClient;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
@@ -34,13 +34,13 @@ public class OrderService {
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
         DeliveryAddress address = new DeliveryAddress(
-                request.getDeliveryAddress().getStreet(),
-                request.getDeliveryAddress().getCity(),
-                request.getDeliveryAddress().getPostalCode(),
-                request.getDeliveryAddress().getCountry()
+                request.deliveryAddress().street(),
+                request.deliveryAddress().city(),
+                request.deliveryAddress().postalCode(),
+                request.deliveryAddress().country()
         );
-        List<OrderItem> items = mapItems(request.getItems());
-        Order order = new Order(request.getCustomerId(), address, items);
+        List<OrderItem> items = mapItems(request.items());
+        Order order = new Order(request.customerId(), address, items);
         return OrderResponse.from(orderRepository.save(order));
     }
 
@@ -60,7 +60,7 @@ public class OrderService {
     public OrderResponse updateOrderStatus(Long id, UpdateOrderStatusRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
-        order.transitionTo(request.getStatus());
+        order.transitionTo(request.status());
         return OrderResponse.from(orderRepository.save(order));
     }
 
@@ -69,10 +69,10 @@ public class OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
         order.updateAddress(new DeliveryAddress(
-                request.getDeliveryAddress().getStreet(),
-                request.getDeliveryAddress().getCity(),
-                request.getDeliveryAddress().getPostalCode(),
-                request.getDeliveryAddress().getCountry()
+                request.deliveryAddress().street(),
+                request.deliveryAddress().city(),
+                request.deliveryAddress().postalCode(),
+                request.deliveryAddress().country()
         ));
         return OrderResponse.from(orderRepository.save(order));
     }
@@ -81,7 +81,7 @@ public class OrderService {
     public OrderResponse updateOrderItems(Long id, UpdateOrderItemsRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
-        order.replaceItems(mapItems(request.getItems()));
+        order.replaceItems(mapItems(request.items()));
         return OrderResponse.from(orderRepository.save(order));
     }
 
@@ -97,10 +97,10 @@ public class OrderService {
                         order.getTotalPrice().getAmount(),
                         order.getTotalPrice().getCurrency().getCurrencyCode()
                 ),
-                request.getPaymentMethod().name()
+                request.paymentMethod().name()
         );
 
-        Long paymentId = paymentClient.createPayment(paymentRequest).getId();
+        Long paymentId = paymentClient.createPayment(paymentRequest).id();
         order.assignPayment(paymentId);
         order.transitionTo(OrderStatus.CONFIRMED);
 
@@ -118,10 +118,10 @@ public class OrderService {
     private List<OrderItem> mapItems(List<OrderItemRequest> itemRequests) {
         return itemRequests.stream()
                 .map(r -> new OrderItem(
-                        r.getProductId(),
-                        r.getProductName(),
-                        r.getQuantity(),
-                        new Price(r.getUnitPrice().getAmount(), r.getUnitPrice().getCurrency())
+                        r.productId(),
+                        r.productName(),
+                        r.quantity(),
+                        new Price(r.unitPrice().amount(), r.unitPrice().currency())
                 ))
                 .toList();
     }

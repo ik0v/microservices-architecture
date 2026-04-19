@@ -4,16 +4,11 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import lombok.Data;
 
 import java.util.List;
 
-@Data
-public class OrderRequest {
-    @NotNull @Positive
-    private Long customerId;
-    @NotNull @Valid
-    private DeliveryAddressRequest deliveryAddress;
-    @NotEmpty @Valid
-    private List<OrderItemRequest> items;
-}
+public record OrderRequest(
+        @NotNull @Positive Long customerId,
+        @NotNull @Valid DeliveryAddressRequest deliveryAddress,
+        @NotEmpty @Valid List<OrderItemRequest> items
+) {}

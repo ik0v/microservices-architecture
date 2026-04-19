@@ -27,6 +27,9 @@ public class PaymentClient {
         }
     }
 
+    // Feign throws FeignException for non-2xx responses, so is2xxSuccessful() is currently
+    // unreachable. Kept intentionally — extend isAcceptable logic here for endpoints that
+    // return meaningful bodies on non-2xx.
     private PaymentClientResponse processException(FeignException ex) {
         HttpStatusCode statusCode = HttpStatusCode.valueOf(ex.status());
         Optional<ByteBuffer> bodyOptional = ex.responseBody();
