@@ -18,6 +18,13 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(PaymentServiceException.class)
+    public ProblemDetail handlePaymentServiceException(PaymentServiceException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_GATEWAY);
+        problem.setDetail(ex.getMessage());
+        return problem;
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
