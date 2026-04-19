@@ -1,9 +1,8 @@
-package no.ikov.orderservice.integration.payment.client;
+package no.ikov.orderservice.integration.payment.client.feign;
 
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -11,5 +10,5 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface PaymentFeignClient {
 
     @PostMapping
-    ResponseEntity<PaymentClientResponse> createPayment(@RequestBody PaymentClientRequest request);
+    PaymentClientResponse createPayment(@RequestBody PaymentClientRequest request);
 }

@@ -16,6 +16,7 @@ public class OrderResponse {
     private Long id;
     private Long customerId;
     private OrderStatus status;
+    private Long paymentId;
     private DeliveryAddressResponse deliveryAddress;
     private List<OrderItemResponse> items;
     private BigDecimal totalAmount;
@@ -28,6 +29,7 @@ public class OrderResponse {
         response.setId(order.getId());
         response.setCustomerId(order.getCustomerId());
         response.setStatus(order.getStatus());
+        response.setPaymentId(order.getPaymentId());
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());
         response.setTotalAmount(order.getTotalPrice().getAmount());

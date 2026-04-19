@@ -6,18 +6,20 @@ import no.ikov.orderservice.domain.model.Order;
 import no.ikov.orderservice.domain.model.OrderItem;
 import no.ikov.orderservice.domain.model.Price;
 import no.ikov.orderservice.domain.repository.OrderRepository;
+import no.ikov.orderservice.infrastructure.dto.OrderItemRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderResponse;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
+import no.ikov.orderservice.integration.payment.client.feign.PaymentClient;
+import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
+import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import no.ikov.orderservice.infrastructure.dto.OrderItemRequest;
 
 import java.util.List;
 
@@ -26,6 +28,7 @@ import java.util.List;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final PaymentClient paymentClient;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -36,7 +39,20 @@ public class OrderService {
                 request.getDeliveryAddress().getCountry()
         );
         List<OrderItem> items = mapItems(request.getItems());
-        Order order = new Order(request.getCustomerId(), address, items);
+        Order order = orderRepository.save(new Order(request.getCustomerId(), address, items));
+
+        PaymentClientRequest paymentRequest = new PaymentClientRequest(
+                order.getId(),
+                order.getCustomerId(),
+                new PaymentClientRequest.PriceRequest(
+                        order.getTotalPrice().getAmount(),
+                        order.getTotalPrice().getCurrency().getCurrencyCode()
+                ),
+                request.getPaymentMethod().name()
+        );
+        PaymentClientResponse paymentResponse = paymentClient.createPayment(paymentRequest);
+        order.assignPayment(paymentResponse.getId());
+
         return OrderResponse.from(orderRepository.save(order));
     }
 
