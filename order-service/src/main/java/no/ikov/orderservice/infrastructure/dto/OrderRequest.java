@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
-import no.ikov.orderservice.domain.model.PaymentMethod;
 
 import java.util.List;
 
@@ -17,6 +16,4 @@ public class OrderRequest {
     private DeliveryAddressRequest deliveryAddress;
     @NotEmpty @Valid
     private List<OrderItemRequest> items;
-    @NotNull
-    private PaymentMethod paymentMethod;
 }

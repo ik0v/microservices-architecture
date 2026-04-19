@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import no.ikov.orderservice.domain.model.DeliveryAddress;
 import no.ikov.orderservice.domain.model.Order;
 import no.ikov.orderservice.domain.model.OrderItem;
+import no.ikov.orderservice.domain.model.OrderStatus;
 import no.ikov.orderservice.domain.model.Price;
 import no.ikov.orderservice.domain.repository.OrderRepository;
 import no.ikov.orderservice.infrastructure.dto.OrderItemRequest;
@@ -12,10 +13,10 @@ import no.ikov.orderservice.infrastructure.dto.OrderResponse;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
+import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
 import no.ikov.orderservice.integration.payment.client.feign.PaymentClient;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
-import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -39,20 +40,7 @@ public class OrderService {
                 request.getDeliveryAddress().getCountry()
         );
         List<OrderItem> items = mapItems(request.getItems());
-        Order order = orderRepository.save(new Order(request.getCustomerId(), address, items));
-
-        PaymentClientRequest paymentRequest = new PaymentClientRequest(
-                order.getId(),
-                order.getCustomerId(),
-                new PaymentClientRequest.PriceRequest(
-                        order.getTotalPrice().getAmount(),
-                        order.getTotalPrice().getCurrency().getCurrencyCode()
-                ),
-                request.getPaymentMethod().name()
-        );
-        PaymentClientResponse paymentResponse = paymentClient.createPayment(paymentRequest);
-        order.assignPayment(paymentResponse.getId());
-
+        Order order = new Order(request.getCustomerId(), address, items);
         return OrderResponse.from(orderRepository.save(order));
     }
 
@@ -94,6 +82,28 @@ public class OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
         order.replaceItems(mapItems(request.getItems()));
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
+    @Transactional
+    public OrderResponse payOrder(Long id, PayOrderRequest request) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException(id));
+
+        PaymentClientRequest paymentRequest = new PaymentClientRequest(
+                order.getId(),
+                order.getCustomerId(),
+                new PaymentClientRequest.PriceRequest(
+                        order.getTotalPrice().getAmount(),
+                        order.getTotalPrice().getCurrency().getCurrencyCode()
+                ),
+                request.getPaymentMethod().name()
+        );
+
+        Long paymentId = paymentClient.createPayment(paymentRequest).getId();
+        order.assignPayment(paymentId);
+        order.transitionTo(OrderStatus.CONFIRMED);
+
         return OrderResponse.from(orderRepository.save(order));
     }
 

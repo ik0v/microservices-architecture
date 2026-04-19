@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import no.ikov.orderservice.application.OrderService;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderResponse;
+import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
@@ -36,6 +37,11 @@ public class OrderController {
         OrderResponse response = orderService.createOrder(request);
         URI location = URI.create("/orders/" + response.getId());
         return ResponseEntity.created(location).body(response);
+    }
+
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<OrderResponse> payOrder(@PathVariable Long id, @RequestBody @Valid PayOrderRequest request) {
+        return ResponseEntity.ok(orderService.payOrder(id, request));
     }
 
     @PatchMapping("/{id}/status")
