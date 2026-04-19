@@ -28,6 +28,8 @@ public class Order {
     @Column(nullable = false, length = 16)
     private OrderStatus status;
 
+    private Long paymentId;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -52,6 +54,10 @@ public class Order {
         this.deliveryAddress = deliveryAddress;
         this.status = OrderStatus.CREATED;
         replaceItems(items);
+    }
+
+    public void assignPayment(Long paymentId) {
+        this.paymentId = paymentId;
     }
 
     public void transitionTo(OrderStatus newStatus) {
