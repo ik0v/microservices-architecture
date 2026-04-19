@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import no.ikov.orderservice.infrastructure.exceptions.PaymentServiceException;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
@@ -32,14 +31,10 @@ public class PaymentClient {
         HttpStatusCode statusCode = HttpStatusCode.valueOf(ex.status());
         Optional<ByteBuffer> bodyOptional = ex.responseBody();
 
-        if (isAcceptable(statusCode) && bodyOptional.isPresent()) {
+        if (statusCode.is2xxSuccessful() && bodyOptional.isPresent()) {
             return deserialize(bodyOptional.get());
         }
         throw new PaymentServiceException("Payment request failed with status: " + ex.status());
-    }
-
-    private boolean isAcceptable(HttpStatusCode statusCode) {
-        return statusCode.is2xxSuccessful() || statusCode.isSameCodeAs(HttpStatus.CONFLICT);
     }
 
     private PaymentClientResponse deserialize(ByteBuffer body) {
