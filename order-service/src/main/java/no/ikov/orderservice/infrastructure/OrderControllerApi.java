@@ -1,22 +1,23 @@
 package no.ikov.orderservice.infrastructure;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Parameter;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderResponse;
 import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import jakarta.validation.Valid;
 
@@ -25,22 +26,32 @@ public interface OrderControllerApi {
 
     @Operation(
             summary = "Create order",
+            description = "Creates a new order for a customer. Returns the created order with a Location header.",
             requestBody = @RequestBody(
                     description = "Order to create",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = OrderRequest.class))
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = OrderRequest.class)
+                    )
             ),
             responses = {
                     @ApiResponse(
                             responseCode = "201",
                             description = "Order created",
                             headers = @Header(name = "Location", description = "URL of the created order"),
-                            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = OrderResponse.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "400",
                             description = "Invalid request body",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     )
             }
     )
@@ -48,37 +59,56 @@ public interface OrderControllerApi {
 
     @Operation(
             summary = "Pay for an order",
+            description = "Initiates payment for an existing order. On success, transitions the order to CONFIRMED.",
             parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
             requestBody = @RequestBody(
                     description = "Payment method to use",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = PayOrderRequest.class))
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PayOrderRequest.class)
+                    )
             ),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Payment processed, order confirmed",
-                            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = OrderResponse.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "400",
                             description = "Invalid request body",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "404",
                             description = "Order not found",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "409",
                             description = "Order already paid",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "502",
                             description = "Payment service unavailable",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     )
             }
     )
@@ -86,27 +116,40 @@ public interface OrderControllerApi {
 
     @Operation(
             summary = "Update order status",
+            description = "Transitions an order to a new status. Only valid status transitions are allowed.",
             parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
             requestBody = @RequestBody(
                     description = "New status to set",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = UpdateOrderStatusRequest.class))
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UpdateOrderStatusRequest.class)
+                    )
             ),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Status updated",
-                            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = OrderResponse.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "400",
                             description = "Invalid request body or illegal status transition",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "404",
                             description = "Order not found",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     )
             }
     )
@@ -114,27 +157,40 @@ public interface OrderControllerApi {
 
     @Operation(
             summary = "Update delivery address",
+            description = "Replaces the delivery address of an existing order.",
             parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
             requestBody = @RequestBody(
                     description = "New delivery address",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = UpdateOrderAddressRequest.class))
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UpdateOrderAddressRequest.class)
+                    )
             ),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Address updated",
-                            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = OrderResponse.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "400",
                             description = "Invalid request body",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "404",
                             description = "Order not found",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     )
             }
     )
@@ -142,27 +198,40 @@ public interface OrderControllerApi {
 
     @Operation(
             summary = "Replace order items",
+            description = "Fully replaces the item list of an existing order with the provided items.",
             parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
             requestBody = @RequestBody(
                     description = "New list of items to replace the existing ones",
                     required = true,
-                    content = @Content(schema = @Schema(implementation = UpdateOrderItemsRequest.class))
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UpdateOrderItemsRequest.class)
+                    )
             ),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Items replaced",
-                            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = OrderResponse.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "400",
                             description = "Invalid request body",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "404",
                             description = "Order not found",
-                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
                     )
             }
     )
