@@ -14,6 +14,7 @@ import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
+import no.ikov.orderservice.infrastructure.exceptions.OrderAlreadyPaidException;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
 import no.ikov.orderservice.integration.payment.client.feign.PaymentClient;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
@@ -89,6 +90,10 @@ public class OrderService {
     public OrderResponse payOrder(Long id, PayOrderRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
+
+        if (order.getPaymentId() != null) {
+            throw new OrderAlreadyPaidException(id);
+        }
 
         PaymentClientRequest paymentRequest = new PaymentClientRequest(
                 order.getId(),

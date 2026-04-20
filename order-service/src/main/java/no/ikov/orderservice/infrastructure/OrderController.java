@@ -26,7 +26,7 @@ import org.springframework.data.domain.Pageable;
 import java.net.URI;
 
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
 

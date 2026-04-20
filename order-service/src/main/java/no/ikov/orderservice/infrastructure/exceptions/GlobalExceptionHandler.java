@@ -18,6 +18,13 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(OrderAlreadyPaidException.class)
+    public ProblemDetail handleOrderAlreadyPaid(OrderAlreadyPaidException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problem.setDetail(ex.getMessage());
+        return problem;
+    }
+
     @ExceptionHandler(PaymentServiceException.class)
     public ProblemDetail handlePaymentServiceException(PaymentServiceException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_GATEWAY);
