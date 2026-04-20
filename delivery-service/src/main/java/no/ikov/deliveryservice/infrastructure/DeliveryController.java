@@ -25,7 +25,7 @@ import java.net.URI;
 @RestController
 @RequestMapping("/deliveries")
 @RequiredArgsConstructor
-public class DeliveryController {
+public class DeliveryController implements DeliveryControllerApi {
 
     private final DeliveryService deliveryService;
 
