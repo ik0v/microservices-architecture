@@ -8,9 +8,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import no.ikov.paymentservice.domain.model.PaymentStatus;
 import no.ikov.paymentservice.infrastructure.dto.PaymentRequest;
 import no.ikov.paymentservice.infrastructure.dto.PaymentResponse;
 import no.ikov.paymentservice.infrastructure.dto.UpdatePaymentStatusRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -123,4 +126,50 @@ public interface PaymentControllerApi {
             }
     )
     ResponseEntity<Void> deletePayment(@PathVariable Long id);
+
+    @Operation(
+            summary = "Get payment by ID",
+            description = "Returns a single payment by its ID.",
+            parameters = @Parameter(name = "id", description = "Payment ID", example = "1"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Payment found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = PaymentResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Payment not found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
+                    )
+            }
+    )
+    ResponseEntity<PaymentResponse> getPaymentById(@PathVariable Long id);
+
+    @Operation(
+            summary = "Get all payments",
+            description = "Returns a paginated list of payments. All filters are optional and can be combined.",
+            parameters = {
+                    @Parameter(name = "customerId", description = "Filter by customer ID", example = "1", required = false),
+                    @Parameter(name = "orderId", description = "Filter by order ID", example = "1", required = false),
+                    @Parameter(name = "status", description = "Filter by payment status", example = "COMPLETED", required = false)
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "List of payments",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = Page.class)
+                            )
+                    )
+            }
+    )
+    ResponseEntity<Page<PaymentResponse>> getAllPayments(Long customerId, Long orderId, PaymentStatus status, Pageable pageable);
 }

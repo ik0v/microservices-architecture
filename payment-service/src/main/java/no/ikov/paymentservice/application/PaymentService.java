@@ -4,11 +4,16 @@ import lombok.RequiredArgsConstructor;
 import no.ikov.paymentservice.domain.model.Payment;
 import no.ikov.paymentservice.domain.model.PaymentMethod;
 import no.ikov.paymentservice.domain.model.Price;
+import no.ikov.paymentservice.domain.model.PaymentStatus;
 import no.ikov.paymentservice.domain.repository.PaymentRepository;
+import no.ikov.paymentservice.domain.repository.PaymentSpecification;
 import no.ikov.paymentservice.infrastructure.dto.PaymentRequest;
 import no.ikov.paymentservice.infrastructure.dto.PaymentResponse;
 import no.ikov.paymentservice.infrastructure.dto.UpdatePaymentStatusRequest;
 import no.ikov.paymentservice.infrastructure.exceptions.PaymentNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +58,20 @@ public class PaymentService {
         }
 
         return PaymentResponse.from(paymentRepository.save(payment));
+    }
+
+    public PaymentResponse getPaymentById(Long id) {
+        return paymentRepository.findById(id)
+                .map(PaymentResponse::from)
+                .orElseThrow(() -> new PaymentNotFoundException(id));
+    }
+
+    public Page<PaymentResponse> getAllPayments(Long customerId, Long orderId, PaymentStatus status, Pageable pageable) {
+        Specification<Payment> spec = Specification
+                .where(PaymentSpecification.hasCustomerId(customerId))
+                .and(PaymentSpecification.hasOrderId(orderId))
+                .and(PaymentSpecification.hasStatus(status));
+        return paymentRepository.findAll(spec, pageable).map(PaymentResponse::from);
     }
 
     @Transactional
