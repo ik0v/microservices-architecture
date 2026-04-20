@@ -28,7 +28,7 @@ import java.net.URI;
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
-public class OrderController {
+public class OrderController implements OrderControllerApi {
 
     private final OrderService orderService;
 
