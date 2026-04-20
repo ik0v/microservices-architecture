@@ -20,7 +20,7 @@ import java.net.URI;
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
-public class PaymentController {
+public class PaymentController implements PaymentControllerApi {
 
     private final PaymentService paymentService;
 
