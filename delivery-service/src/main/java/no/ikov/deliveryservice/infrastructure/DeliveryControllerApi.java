@@ -13,6 +13,8 @@ import no.ikov.deliveryservice.infrastructure.dto.DeliveryResponse;
 import no.ikov.deliveryservice.infrastructure.dto.UpdateCourierRequest;
 import no.ikov.deliveryservice.infrastructure.dto.UpdateDeliveryAddressRequest;
 import no.ikov.deliveryservice.infrastructure.dto.UpdateDeliveryStatusRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -178,4 +180,66 @@ public interface DeliveryControllerApi {
             }
     )
     ResponseEntity<DeliveryResponse> updateAddress(@PathVariable Long id, @Valid UpdateDeliveryAddressRequest request);
+
+    @Operation(
+            summary = "Delete delivery",
+            description = "Permanently deletes a delivery by ID.",
+            parameters = @Parameter(name = "id", description = "Delivery ID", example = "1"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "Delivery deleted"
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Delivery not found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
+                    )
+            }
+    )
+    ResponseEntity<Void> deleteDelivery(@PathVariable Long id);
+
+    @Operation(
+            summary = "Get delivery by ID",
+            description = "Returns a single delivery by its ID.",
+            parameters = @Parameter(name = "id", description = "Delivery ID", example = "1"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Delivery found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = DeliveryResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Delivery not found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
+                    )
+            }
+    )
+    ResponseEntity<DeliveryResponse> getDeliveryById(@PathVariable Long id);
+
+    @Operation(
+            summary = "Get all deliveries",
+            description = "Returns a paginated list of all deliveries. Supports page, size and sort query parameters.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "List of deliveries",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = Page.class)
+                            )
+                    )
+            }
+    )
+    ResponseEntity<Page<DeliveryResponse>> getAllDeliveries(Pageable pageable);
 }
