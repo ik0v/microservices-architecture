@@ -7,8 +7,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderResponse;
+import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
+import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
+import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
+import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
@@ -39,4 +45,126 @@ public interface OrderControllerApi {
             }
     )
     ResponseEntity<OrderResponse> createOrder(@Valid OrderRequest request);
+
+    @Operation(
+            summary = "Pay for an order",
+            parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
+            requestBody = @RequestBody(
+                    description = "Payment method to use",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = PayOrderRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Payment processed, order confirmed",
+                            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid request body",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Order not found",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "Order already paid",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "502",
+                            description = "Payment service unavailable",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    )
+            }
+    )
+    ResponseEntity<OrderResponse> payOrder(@PathVariable Long id, @Valid PayOrderRequest request);
+
+    @Operation(
+            summary = "Update order status",
+            parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
+            requestBody = @RequestBody(
+                    description = "New status to set",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = UpdateOrderStatusRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Status updated",
+                            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid request body or illegal status transition",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Order not found",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    )
+            }
+    )
+    ResponseEntity<OrderResponse> updateOrderStatus(@PathVariable Long id, @Valid UpdateOrderStatusRequest request);
+
+    @Operation(
+            summary = "Update delivery address",
+            parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
+            requestBody = @RequestBody(
+                    description = "New delivery address",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = UpdateOrderAddressRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Address updated",
+                            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid request body",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Order not found",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    )
+            }
+    )
+    ResponseEntity<OrderResponse> updateOrderAddress(@PathVariable Long id, @Valid UpdateOrderAddressRequest request);
+
+    @Operation(
+            summary = "Replace order items",
+            parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
+            requestBody = @RequestBody(
+                    description = "New list of items to replace the existing ones",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = UpdateOrderItemsRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Items replaced",
+                            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid request body",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Order not found",
+                            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+                    )
+            }
+    )
+    ResponseEntity<OrderResponse> updateOrderItems(@PathVariable Long id, @Valid UpdateOrderItemsRequest request);
 }
