@@ -14,6 +14,8 @@ import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -236,4 +238,66 @@ public interface OrderControllerApi {
             }
     )
     ResponseEntity<OrderResponse> updateOrderItems(@PathVariable Long id, @Valid UpdateOrderItemsRequest request);
+
+    @Operation(
+            summary = "Delete order",
+            description = "Permanently deletes an order by ID.",
+            parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "Order deleted"
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Order not found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
+                    )
+            }
+    )
+    ResponseEntity<Void> deleteOrder(@PathVariable Long id);
+
+    @Operation(
+            summary = "Get order by ID",
+            description = "Returns a single order by its ID.",
+            parameters = @Parameter(name = "id", description = "Order ID", example = "1"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Order found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = OrderResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Order not found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProblemDetail.class)
+                            )
+                    )
+            }
+    )
+    ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id);
+
+    @Operation(
+            summary = "Get all orders",
+            description = "Returns a paginated list of all orders. Supports page, size and sort query parameters.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "List of orders",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = Page.class)
+                            )
+                    )
+            }
+    )
+    ResponseEntity<Page<OrderResponse>> getAllOrders(Pageable pageable);
 }
