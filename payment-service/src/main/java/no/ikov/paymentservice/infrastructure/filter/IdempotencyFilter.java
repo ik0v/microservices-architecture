@@ -38,8 +38,9 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         String key = request.getHeader(IDEMPOTENCY_KEY_HEADER);
         // Reject early — without a key we cannot guarantee idempotency, so the request is invalid
         if (key == null || key.isBlank()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-                    "Missing required header: " + IDEMPOTENCY_KEY_HEADER);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().println("{\"error\": \"Missing required header: " + IDEMPOTENCY_KEY_HEADER + "\"}");
             return;
         }
 

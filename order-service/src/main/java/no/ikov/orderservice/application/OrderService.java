@@ -18,6 +18,7 @@ import no.ikov.orderservice.infrastructure.exceptions.OrderAlreadyPaidException;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
 import no.ikov.orderservice.integration.payment.client.feign.PaymentClient;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
+import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -87,7 +88,7 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponse payOrder(Long id, PayOrderRequest request) {
+    public PaymentClientResponse payOrder(Long id, PayOrderRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
 
@@ -106,10 +107,12 @@ public class OrderService {
         );
 
         Long paymentId = paymentClient.createPayment(paymentRequest).id();
+        PaymentClientResponse paymentResponse = paymentClient.completePayment(paymentId);
         order.assignPayment(paymentId);
         order.transitionTo(OrderStatus.CONFIRMED);
+        orderRepository.save(order);
 
-        return OrderResponse.from(orderRepository.save(order));
+        return paymentResponse;
     }
 
     @Transactional
