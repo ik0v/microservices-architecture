@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import no.ikov.orderservice.infrastructure.exceptions.PaymentServiceException;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
@@ -20,8 +21,10 @@ public class PaymentClient {
     private final JsonMapper mapper;
 
     public PaymentClientResponse createPayment(PaymentClientRequest request) {
+        // Key is stable per order — same key on every retry prevents duplicate charges
+        String idempotencyKey = "payment-order-" + request.orderId();
         try {
-            return paymentFeignClient.createPayment(request);
+            return paymentFeignClient.createPayment(request, idempotencyKey);
         } catch (FeignException ex) {
             return processException(ex);
         }
@@ -36,6 +39,10 @@ public class PaymentClient {
 
         if (statusCode.is2xxSuccessful() && bodyOptional.isPresent()) {
             return deserialize(bodyOptional.get());
+        }
+        // 409 means a request with the same idempotency key is already in flight
+        if (statusCode.isSameCodeAs(HttpStatus.CONFLICT)) {
+            throw new PaymentServiceException("Payment already in progress for this order, retry later");
         }
         throw new PaymentServiceException("Payment request failed with status: " + ex.status());
     }
