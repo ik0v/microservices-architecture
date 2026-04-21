@@ -2,9 +2,12 @@ package no.ikov.paymentservice.domain.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -26,19 +29,28 @@ public class IdempotencyRecord {
     @Column(nullable = false, unique = true)
     private String idempotencyKey;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private IdempotencyStatus status;
+
+    // Null while PENDING — populated once the request completes
+    @Lob
     private String responseBody;
 
-    @Column(nullable = false)
-    private int httpStatus;
+    private Integer httpStatus;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public IdempotencyRecord(String idempotencyKey, String responseBody, int httpStatus) {
+    public IdempotencyRecord(String idempotencyKey) {
         this.idempotencyKey = idempotencyKey;
+        this.status = IdempotencyStatus.PENDING;
+    }
+
+    public void complete(String responseBody, int httpStatus) {
         this.responseBody = responseBody;
         this.httpStatus = httpStatus;
+        this.status = IdempotencyStatus.COMPLETED;
     }
 
     @PrePersist
