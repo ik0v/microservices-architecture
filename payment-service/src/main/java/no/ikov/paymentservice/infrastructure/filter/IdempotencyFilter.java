@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 import java.io.IOException;
 
 @Component
@@ -71,7 +73,19 @@ public class IdempotencyFilter extends OncePerRequestFilter {
     private void processAndCache(HttpServletRequest request, HttpServletResponse response,
                                  FilterChain chain, String key) {
         // Mark key as PENDING before processing — blocks concurrent requests with the same key
-        IdempotencyRecord record = idempotencyRepository.save(new IdempotencyRecord(key));
+        IdempotencyRecord record;
+        try {
+            record = idempotencyRepository.save(new IdempotencyRecord(key));
+        } catch (DataIntegrityViolationException e) {
+            // Two requests raced past the findByIdempotencyKey check simultaneously — treat as PENDING
+            try {
+                response.setStatus(HttpStatus.CONFLICT.value());
+                response.getWriter().println("Same request is already in progress...");
+            } catch (IOException ex) {
+                throw new RuntimeException("Failed to write conflict response", ex);
+            }
+            return;
+        }
         ContentCachingResponseWrapper wrapper = new ContentCachingResponseWrapper(response);
         try {
             chain.doFilter(request, wrapper);
