@@ -20,3 +20,30 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentServiceInternal:
+        # Percentage of failed calls that triggers the circuit to OPEN (0-100)
+        failure-rate-threshold: 50
+        # Minimum number of calls required before failure rate is calculated
+        # Prevents tripping on the very first call
+        minimum-number-of-calls: 10
+        # Number of calls tracked in the sliding window to compute the failure rate
+        sliding-window-size: 10
+        # How long the circuit stays OPEN before transitioning to HALF-OPEN to test recovery
+        wait-duration-in-open-state: 10s
+        # Number of test calls allowed in HALF-OPEN state
+        # If enough succeed → CLOSED; if too many fail → back to OPEN
+        permitted-number-of-calls-in-half-open-state: 3
+        # COUNT_BASED: window tracks last N calls; TIME_BASED: tracks calls in last N seconds
+        sliding-window-type: COUNT_BASED
+        # These exceptions increment the failure counter and contribute to tripping the circuit
+        record-exceptions:
+          - org.springframework.dao.DataAccessException
+          - java.io.IOException
+        # These are expected business outcomes — do not count as failures
+        ignore-exceptions:
+          - no.ikov.paymentservice.infrastructure.exceptions.PaymentNotFoundException
+          - no.ikov.paymentservice.infrastructure.exceptions.InvalidPaymentStateException
