@@ -3,8 +3,10 @@ package no.ikov.orderservice.integration.payment.client.feign;
 import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import no.ikov.orderservice.infrastructure.exceptions.PaymentServiceException;
+import no.ikov.orderservice.infrastructure.exceptions.PaymentTransientException;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
 import no.ikov.orderservice.integration.payment.dto.UpdatePaymentStatusClientRequest;
@@ -28,7 +30,8 @@ public class PaymentClient {
     private final PaymentFeignClient paymentFeignClient;
     private final JsonMapper mapper;
 
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "createPaymentFallback")
+    @Retry(name = CIRCUIT_BREAKER_NAME)
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
     public PaymentClientResponse createPayment(PaymentClientRequest request) {
         // Key is stable per order — same key on every retry prevents duplicate charges
         String idempotencyKey = "payment-order-" + request.orderId();
@@ -51,14 +54,6 @@ public class PaymentClient {
         }
     }
 
-    // Fallback is triggered both when a call fails and when the circuit is already OPEN
-    private PaymentClientResponse createPaymentFallback(PaymentClientRequest request, Throwable ex) {
-        if (ex instanceof CallNotPermittedException) {
-            throw new PaymentServiceException("Payment service is temporarily blocked (circuit open), please try again later");
-        }
-        throw new PaymentServiceException("Payment service is unavailable, please try again later");
-    }
-
     private PaymentClientResponse completePaymentFallback(Long paymentId, Throwable ex) {
         if (ex instanceof CallNotPermittedException) {
             throw new PaymentServiceException("Payment service is temporarily blocked (circuit open), please try again later");
@@ -79,6 +74,10 @@ public class PaymentClient {
         // 409 means a request with the same idempotency key is already in flight
         if (statusCode.isSameCodeAs(HttpStatus.CONFLICT)) {
             throw new PaymentServiceException("Payment already in progress for this order, retry later");
+        }
+        // 503 is transient — the Retry aspect will re-attempt the call
+        if (statusCode.isSameCodeAs(HttpStatus.SERVICE_UNAVAILABLE)) {
+            throw new PaymentTransientException("Payment service returned 503");
         }
         throw new PaymentServiceException("Payment request failed with status: " + ex.status());
     }

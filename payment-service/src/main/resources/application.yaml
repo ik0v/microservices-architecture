@@ -21,6 +21,9 @@ spring:
       hibernate:
         format_sql: true
 
+failure-simulation:
+  enabled: true
+
 resilience4j:
   circuitbreaker:
     instances:

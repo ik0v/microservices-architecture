@@ -28,10 +28,23 @@ payment:
     url: http://localhost:8082
 
 resilience4j:
+  retry:
+    instances:
+      paymentService:
+        # Total attempts including the first call
+        max-attempts: 3
+        # Fixed delay between attempts
+        wait-duration: 500ms
+        # Only retry on transient failures (503) — not on business errors or open-circuit exceptions
+        retry-exceptions:
+          - no.ikov.orderservice.infrastructure.exceptions.PaymentTransientException
+        ignore-exceptions:
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - no.ikov.orderservice.infrastructure.exceptions.PaymentServiceException
   circuitbreaker:
     instances:
       paymentService:
-        # Percentage of failed calls that triggers the circuit to OPEN (0-100)
+        # Percentage of failed calls that triggers the circuit to OPEN
         failure-rate-threshold: 50
         # Minimum number of calls required before failure rate is calculated
         # Prevents tripping on the very first call
