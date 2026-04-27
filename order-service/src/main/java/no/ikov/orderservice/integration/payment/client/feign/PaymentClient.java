@@ -3,6 +3,8 @@ package no.ikov.orderservice.integration.payment.client.feign;
 import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import no.ikov.orderservice.infrastructure.exceptions.PaymentServiceException;
@@ -30,6 +32,7 @@ public class PaymentClient {
     private final PaymentFeignClient paymentFeignClient;
     private final JsonMapper mapper;
 
+    @RateLimiter(name = CIRCUIT_BREAKER_NAME)
     @Retry(name = CIRCUIT_BREAKER_NAME)
     @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
     public PaymentClientResponse createPayment(PaymentClientRequest request) {
@@ -39,6 +42,8 @@ public class PaymentClient {
             return paymentFeignClient.createPayment(request, idempotencyKey);
         } catch (FeignException ex) {
             return processException(ex);
+        } catch (RequestNotPermitted ex) {
+            throw new PaymentServiceException("Payment request rejected — rate limit reached, please try again later");
         }
     }
 

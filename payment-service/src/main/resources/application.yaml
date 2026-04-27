@@ -26,7 +26,7 @@ failure-simulation:
 
 rate-limiter:
   enabled: true
-  leak-rate-per-second: 1
+  leak-rate-per-second: 10
 
 resilience4j:
   circuitbreaker:

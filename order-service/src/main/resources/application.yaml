@@ -41,6 +41,15 @@ resilience4j:
         ignore-exceptions:
           - io.github.resilience4j.circuitbreaker.CallNotPermittedException
           - no.ikov.orderservice.infrastructure.exceptions.PaymentServiceException
+  ratelimiter:
+    instances:
+      paymentService:
+        # How many calls are allowed per refresh period
+        limit-for-period: 5
+        # The window resets every second
+        limit-refresh-period: 1s
+        # Don't queue — reject immediately if the limit is reached
+        timeout-duration: 0
   circuitbreaker:
     instances:
       paymentService:
