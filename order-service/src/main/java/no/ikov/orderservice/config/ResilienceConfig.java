@@ -1,6 +1,7 @@
 package no.ikov.orderservice.config;
 
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
+import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ public class ResilienceConfig {
 
     private final RetryRegistry retryRegistry;
     private final BulkheadRegistry bulkheadRegistry;
+    private final RateLimiterRegistry rateLimiterRegistry;
 
     @PostConstruct
     public void configureRetryLogging() {
@@ -52,6 +54,17 @@ public class ResilienceConfig {
                 .onCallFinished(event -> log.debug(
                         "[Bulkhead] Call finished for '{}'",
                         event.getBulkheadName()
+                ));
+    }
+
+    @PostConstruct
+    public void configureRateLimiterLogging() {
+        rateLimiterRegistry.rateLimiter("paymentService").getEventPublisher()
+                .onFailure(event -> log.warn(
+                        "[RateLimiter] Request rejected for '{}' — limit of {} calls/{} exceeded",
+                        event.getRateLimiterName(),
+                        rateLimiterRegistry.rateLimiter("paymentService").getRateLimiterConfig().getLimitForPeriod(),
+                        rateLimiterRegistry.rateLimiter("paymentService").getRateLimiterConfig().getLimitRefreshPeriod()
                 ));
     }
 }

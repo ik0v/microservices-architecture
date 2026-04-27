@@ -34,8 +34,8 @@ public class PaymentClient {
     private final PaymentFeignClient paymentFeignClient;
     private final JsonMapper mapper;
 
-    @Bulkhead(name = CIRCUIT_BREAKER_NAME)
-    @RateLimiter(name = CIRCUIT_BREAKER_NAME)
+    @Bulkhead(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "createPaymentFallback")
+    @RateLimiter(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "createPaymentFallback")
     @Retry(name = CIRCUIT_BREAKER_NAME)
     @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
     public PaymentClientResponse createPayment(PaymentClientRequest request) {
@@ -45,11 +45,15 @@ public class PaymentClient {
             return paymentFeignClient.createPayment(request, idempotencyKey);
         } catch (FeignException ex) {
             return processException(ex);
-        } catch (BulkheadFullException ex) {
-            throw new PaymentServiceException("Too many concurrent payment requests, please try again later");
-        } catch (RequestNotPermitted ex) {
-            throw new PaymentServiceException("Payment request rejected — rate limit reached, please try again later");
         }
+    }
+
+    private PaymentClientResponse createPaymentFallback(PaymentClientRequest request, BulkheadFullException ex) {
+        throw new PaymentServiceException("Too many concurrent payment requests, please try again later");
+    }
+
+    private PaymentClientResponse createPaymentFallback(PaymentClientRequest request, RequestNotPermitted ex) {
+        throw new PaymentServiceException("Payment request rejected — rate limit reached, please try again later");
     }
 
     @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "completePaymentFallback")
