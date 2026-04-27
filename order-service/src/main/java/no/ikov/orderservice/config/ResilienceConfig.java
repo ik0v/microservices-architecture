@@ -1,5 +1,6 @@
 package no.ikov.orderservice.config;
 
+import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 public class ResilienceConfig {
 
     private final RetryRegistry retryRegistry;
+    private final BulkheadRegistry bulkheadRegistry;
 
     @PostConstruct
     public void configureRetryLogging() {
@@ -37,5 +39,19 @@ public class ResilienceConfig {
                         );
                     }
                 });
+    }
+
+    @PostConstruct
+    public void configureBulkheadLogging() {
+        bulkheadRegistry.bulkhead("paymentService").getEventPublisher()
+                .onCallRejected(event -> log.warn(
+                        "[Bulkhead] Call rejected for '{}' — all {} slots occupied",
+                        event.getBulkheadName(),
+                        bulkheadRegistry.bulkhead("paymentService").getBulkheadConfig().getMaxConcurrentCalls()
+                ))
+                .onCallFinished(event -> log.debug(
+                        "[Bulkhead] Call finished for '{}'",
+                        event.getBulkheadName()
+                ));
     }
 }

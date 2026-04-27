@@ -28,6 +28,22 @@ payment:
     url: http://localhost:8082
 
 resilience4j:
+  bulkhead:
+    instances:
+      paymentService:
+        # Max number of concurrent calls allowed to payment-service
+        max-concurrent-calls: 5
+        # Don't queue — reject immediately if all slots are taken
+        max-wait-duration: 0
+  ratelimiter:
+    instances:
+      paymentService:
+        # How many calls are allowed per refresh period
+        limit-for-period: 5
+        # The window resets every second
+        limit-refresh-period: 1s
+        # Don't queue — reject immediately if the limit is reached
+        timeout-duration: 0
   retry:
     instances:
       paymentService:
@@ -41,15 +57,6 @@ resilience4j:
         ignore-exceptions:
           - io.github.resilience4j.circuitbreaker.CallNotPermittedException
           - no.ikov.orderservice.infrastructure.exceptions.PaymentServiceException
-  ratelimiter:
-    instances:
-      paymentService:
-        # How many calls are allowed per refresh period
-        limit-for-period: 5
-        # The window resets every second
-        limit-refresh-period: 1s
-        # Don't queue — reject immediately if the limit is reached
-        timeout-duration: 0
   circuitbreaker:
     instances:
       paymentService:

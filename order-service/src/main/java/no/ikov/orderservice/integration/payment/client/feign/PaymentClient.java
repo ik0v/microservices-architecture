@@ -1,6 +1,8 @@
 package no.ikov.orderservice.integration.payment.client.feign;
 
 import feign.FeignException;
+import io.github.resilience4j.bulkhead.BulkheadFullException;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.RequestNotPermitted;
@@ -32,6 +34,7 @@ public class PaymentClient {
     private final PaymentFeignClient paymentFeignClient;
     private final JsonMapper mapper;
 
+    @Bulkhead(name = CIRCUIT_BREAKER_NAME)
     @RateLimiter(name = CIRCUIT_BREAKER_NAME)
     @Retry(name = CIRCUIT_BREAKER_NAME)
     @CircuitBreaker(name = CIRCUIT_BREAKER_NAME)
@@ -42,6 +45,8 @@ public class PaymentClient {
             return paymentFeignClient.createPayment(request, idempotencyKey);
         } catch (FeignException ex) {
             return processException(ex);
+        } catch (BulkheadFullException ex) {
+            throw new PaymentServiceException("Too many concurrent payment requests, please try again later");
         } catch (RequestNotPermitted ex) {
             throw new PaymentServiceException("Payment request rejected — rate limit reached, please try again later");
         }
