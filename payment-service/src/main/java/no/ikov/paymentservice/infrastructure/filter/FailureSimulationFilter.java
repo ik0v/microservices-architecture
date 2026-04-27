@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Component
-@Order(1)
+@Order(2)
 public class FailureSimulationFilter extends OncePerRequestFilter {
 
     private static final Random RANDOM = new Random();

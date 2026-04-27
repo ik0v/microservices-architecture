@@ -24,6 +24,10 @@ spring:
 failure-simulation:
   enabled: true
 
+rate-limiter:
+  enabled: true
+  leak-rate-per-second: 1
+
 resilience4j:
   circuitbreaker:
     instances:
