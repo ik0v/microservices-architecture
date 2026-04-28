@@ -1,0 +1,13 @@
+{
+  "id": 2,
+  "orderId": 19,
+  "customerId": 4,
+  "price": {
+    "amount": 205.00,
+    "currency": "USD"
+  },
+  "status": "FAILED",
+  "method": "DEBIT_CARD",
+  "transactionId": null
+}
+

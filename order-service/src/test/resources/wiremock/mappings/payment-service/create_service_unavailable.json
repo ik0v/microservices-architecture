@@ -1,0 +1,9 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "/api/payments"
+  },
+  "response": {
+    "status": 503
+  }
+}
