@@ -1,7 +1,10 @@
 {
   "request": {
     "method": "POST",
-    "url": "/api/payments"
+    "url": "/api/payments",
+    "bodyPatterns": [
+      { "matchesJsonPath": "$[?(@.orderId == 3)]" }
+    ]
   },
   "response": {
     "status": 503
