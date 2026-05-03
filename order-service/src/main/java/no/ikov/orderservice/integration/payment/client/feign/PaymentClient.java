@@ -72,7 +72,7 @@ public class PaymentClient {
         if (ex instanceof CallNotPermittedException) {
             throw new PaymentServiceException("Payment service is temporarily blocked (circuit open), please try again later");
         }
-        throw new PaymentServiceException("Payment service is unavailable, please try again later");
+        throw new PaymentServiceException("Payment service is unavailable, please try again later", ex);
     }
 
     // Feign throws FeignException for non-2xx responses, so is2xxSuccessful() is currently
