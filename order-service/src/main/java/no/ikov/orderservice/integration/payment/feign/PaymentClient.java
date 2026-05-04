@@ -1,4 +1,4 @@
-package no.ikov.orderservice.integration.payment.client.feign;
+package no.ikov.orderservice.integration.payment.feign;
 
 import feign.FeignException;
 import io.github.resilience4j.bulkhead.BulkheadFullException;

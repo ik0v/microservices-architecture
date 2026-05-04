@@ -1,11 +1,10 @@
 package no.ikov.orderservice.infrastructure;
 
 import lombok.RequiredArgsConstructor;
-import no.ikov.orderservice.application.OrderService;
+import no.ikov.orderservice.application.OrderServiceRabbitMQImpl;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderResponse;
 import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
-import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
@@ -31,7 +30,7 @@ import java.net.URI;
 @RequiredArgsConstructor
 public class OrderController implements OrderControllerApi {
 
-    private final OrderService orderService;
+    private final OrderServiceRabbitMQImpl orderService;
 
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@RequestBody @Valid OrderRequest request) {
@@ -41,7 +40,7 @@ public class OrderController implements OrderControllerApi {
     }
 
     @PostMapping("/{id}/pay")
-    public ResponseEntity<PaymentClientResponse> payOrder(@PathVariable Long id, @RequestBody @Valid PayOrderRequest request) {
+    public ResponseEntity<OrderResponse> payOrder(@PathVariable Long id, @RequestBody @Valid PayOrderRequest request) {
         return ResponseEntity.ok(orderService.payOrder(id, request));
     }
 

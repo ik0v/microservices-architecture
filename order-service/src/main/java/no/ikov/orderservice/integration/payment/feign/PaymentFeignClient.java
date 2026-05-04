@@ -1,4 +1,4 @@
-package no.ikov.orderservice.integration.payment.client.feign;
+package no.ikov.orderservice.integration.payment.feign;
 
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;

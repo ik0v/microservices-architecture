@@ -1,4 +1,4 @@
-package no.ikov.orderservice.integration.payment.client.feign;
+package no.ikov.orderservice.integration.payment.feign;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import no.ikov.orderservice.infrastructure.exceptions.PaymentServiceException;

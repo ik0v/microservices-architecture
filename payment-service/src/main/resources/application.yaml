@@ -20,6 +20,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  rabbitmq:
+    addresses: amqp://localhost:5672
+    username: admin
+    password: admin
 
 failure-simulation:
   enabled: true
