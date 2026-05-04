@@ -16,7 +16,7 @@ import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
 import no.ikov.orderservice.infrastructure.exceptions.OrderAlreadyPaidException;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
-import no.ikov.orderservice.integration.payment.rabbitmq.listener.config.RabbitMQPaymentConfig;
+import no.ikov.orderservice.integration.payment.rabbitmq.config.RabbitMQPaymentConfig;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;

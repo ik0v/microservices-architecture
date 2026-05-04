@@ -2,7 +2,11 @@ package no.ikov.orderservice.integration.payment.rabbitmq.config;
 
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -25,19 +29,18 @@ public class RabbitMQPaymentConfig {
     public static final String RESULT_ROUTING_KEY = "payment-result-queue";
     public static final String PAYMENT_RESULT_TYPE_ID = "payment-result";
 
-    @Bean
-    public Queue paymentRequestQueue() {
-        return QueueBuilder.durable(QUEUE).build();
-    }
-
+    // order-service is the producer for payment-request-queue — the queue itself
+    // is owned and declared by payment-service (which also sets DLX arguments).
+    // We only declare the exchange and a binding using the queue name directly,
+    // so RabbitAdmin does not attempt to redeclare the queue without DLX args.
     @Bean
     public DirectExchange paymentRequestExchange() {
         return new DirectExchange(EXCHANGE);
     }
 
     @Bean
-    public Binding paymentRequestBinding(Queue paymentRequestQueue, DirectExchange paymentRequestExchange) {
-        return BindingBuilder.bind(paymentRequestQueue).to(paymentRequestExchange).with(ROUTING_KEY);
+    public Binding paymentRequestBinding(DirectExchange paymentRequestExchange) {
+        return new Binding(QUEUE, Binding.DestinationType.QUEUE, EXCHANGE, ROUTING_KEY, null);
     }
 
     @Bean
