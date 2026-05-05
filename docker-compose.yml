@@ -11,5 +11,40 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
+  kafka:
+    image: bitnami/kafka:4.0.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      # Unique ID for this broker node
+      KAFKA_CFG_NODE_ID: 0
+      # This node acts as both broker (handles messages) and controller (handles cluster metadata)
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      # PLAINTEXT://:9092 — for clients; CONTROLLER://:9093 — for internal cluster coordination
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      # Address Kafka advertises to clients running on the host machine
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # Maps each listener name to its security protocol (PLAINTEXT = no TLS)
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      # Cluster voters for KRaft consensus — format: nodeId@host:port
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      # Tells Kafka which listener is used for controller communication
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    volumes:
+      - kafka_data:/bitnami/kafka
+    restart: unless-stopped
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+    restart: unless-stopped
 volumes:
   rabbitmq_data:
+  kafka_data:
