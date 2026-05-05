@@ -14,6 +14,7 @@ import no.ikov.deliveryservice.infrastructure.dto.UpdateDeliveryStatusRequest;
 import no.ikov.deliveryservice.infrastructure.exceptions.DeliveryNotFoundException;
 import no.ikov.deliveryservice.infrastructure.exceptions.InvalidDeliveryStateException;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeliveryService {
 
     private final DeliveryRepository deliveryRepository;
+
+    @Transactional
+    public DeliveryResponse createDeliveryFromOrder(Long orderId, DeliveryAddress address) {
+        Delivery delivery = new Delivery(orderId, address, LocalDateTime.now().plusDays(3));
+        return DeliveryResponse.from(deliveryRepository.save(delivery));
+    }
 
     @Transactional
     public DeliveryResponse createDelivery(DeliveryRequest request) {

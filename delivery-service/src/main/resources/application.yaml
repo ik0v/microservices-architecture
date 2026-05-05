@@ -22,6 +22,9 @@ spring:
         format_sql: true
   kafka:
     bootstrap-servers: localhost:9093
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
       group-id: delivery-service
       auto-offset-reset: earliest
@@ -29,3 +32,9 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+        spring.json.value.default.type: "no.ikov.deliveryservice.integration.order.kafka.event.OrderPaymentSucceededEvent"
+
+kafka:
+  topics:
+    order-deliveries: order-deliveries
+    delivery-created: delivery-created
