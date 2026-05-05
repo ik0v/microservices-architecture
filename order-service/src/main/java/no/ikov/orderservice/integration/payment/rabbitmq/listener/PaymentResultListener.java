@@ -4,10 +4,13 @@ import lombok.RequiredArgsConstructor;
 import no.ikov.orderservice.domain.model.Order;
 import no.ikov.orderservice.domain.model.OrderStatus;
 import no.ikov.orderservice.domain.repository.OrderRepository;
+import no.ikov.orderservice.integration.delivery.kafka.event.OrderPaymentSucceededEvent;
 import no.ikov.orderservice.integration.payment.rabbitmq.config.RabbitMQPaymentConfig;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentResultListener {
 
     private final OrderRepository orderRepository;
+    private final KafkaTemplate<String, OrderPaymentSucceededEvent> kafkaTemplate;
+
+    @Value("${kafka.topics.order-deliveries}")
+    private String orderDeliveriesTopic;
 
     @RabbitListener(queues = RabbitMQPaymentConfig.RESULT_QUEUE)
     @Transactional
@@ -25,9 +32,26 @@ public class PaymentResultListener {
         if ("COMPLETED".equals(response.status())) {
             order.assignPayment(response.id());
             order.transitionTo(OrderStatus.CONFIRMED);
+            orderRepository.save(order);
+
+//            kafkaTemplate.send(insuranceConfirmationTopic, confirmation.getId().toString(), responseMessage);
+
+            kafkaTemplate.send(
+                    orderDeliveriesTopic,
+                    String.valueOf(order.getId()),
+                    new OrderPaymentSucceededEvent(
+                            order.getId(),
+                            new OrderPaymentSucceededEvent.DeliveryAddress(
+                                    order.getDeliveryAddress().getStreet(),
+                                    order.getDeliveryAddress().getCity(),
+                                    order.getDeliveryAddress().getPostalCode(),
+                                    order.getDeliveryAddress().getCountry()
+                            )
+                    )
+            );
         } else {
             order.transitionTo(OrderStatus.CANCELLED);
+            orderRepository.save(order);
         }
-        orderRepository.save(order);
     }
 }

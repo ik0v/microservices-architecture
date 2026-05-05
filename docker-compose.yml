@@ -12,25 +12,32 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
   kafka:
-    image: bitnami/kafka:4.0.0
+    image: bitnamilegacy/kafka:latest
     container_name: kafka
     ports:
       - "9092:9092"
+      - "9093:9093"
     environment:
+      # Explicitly enable KRaft mode (no ZooKeeper)
+      KAFKA_ENABLE_KRAFT: yes
       # Unique ID for this broker node
-      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_NODE_ID: 1
       # This node acts as both broker (handles messages) and controller (handles cluster metadata)
       KAFKA_CFG_PROCESS_ROLES: broker,controller
-      # PLAINTEXT://:9092 — for clients; CONTROLLER://:9093 — for internal cluster coordination
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      # Address Kafka advertises to clients running on the host machine
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # Three listeners: PLAINTEXT for Docker-internal, EXTERNAL for host machine, CONTROLLER for KRaft
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:9093,CONTROLLER://:9094
+      # Docker-internal clients (kafka-ui) use kafka:9092; host clients (Spring services) use localhost:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9093
       # Maps each listener name to its security protocol (PLAINTEXT = no TLS)
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      # Listener used for broker-to-broker communication
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       # Cluster voters for KRaft consensus — format: nodeId@host:port
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9094
       # Tells Kafka which listener is used for controller communication
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # Auto-create topics on first message (convenient for development)
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
     volumes:
       - kafka_data:/bitnami/kafka
     restart: unless-stopped
