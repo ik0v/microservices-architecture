@@ -16,11 +16,14 @@ import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
 import no.ikov.orderservice.infrastructure.exceptions.OrderAlreadyPaidException;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
-import no.ikov.orderservice.integration.payment.feign.PaymentClient;
+import no.ikov.orderservice.integration.delivery.kafka.event.OrderPaymentSucceededEvent;
+import no.ikov.orderservice.integration.payment.rabbitmq.config.RabbitMQPaymentConfig;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
-import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +34,11 @@ import java.util.List;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final PaymentClient paymentClient;
+    private final RabbitTemplate rabbitTemplate;
+    private final KafkaTemplate<String, OrderPaymentSucceededEvent> kafkaTemplate;
+
+    @Value("${kafka.topics.order-deliveries}")
+    private String orderDeliveriesTopic;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -88,7 +95,7 @@ public class OrderService {
     }
 
     @Transactional
-    public PaymentClientResponse payOrder(Long id, PayOrderRequest request) {
+    public OrderResponse payOrder(Long id, PayOrderRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
 
@@ -96,7 +103,7 @@ public class OrderService {
             throw new OrderAlreadyPaidException(id);
         }
 
-        PaymentClientRequest paymentRequest = new PaymentClientRequest(
+        PaymentClientRequest event = new PaymentClientRequest(
                 order.getId(),
                 order.getCustomerId(),
                 new PaymentClientRequest.PriceRequest(
@@ -106,13 +113,40 @@ public class OrderService {
                 request.paymentMethod().name()
         );
 
-        Long paymentId = paymentClient.createPayment(paymentRequest).id();
-        PaymentClientResponse paymentResponse = paymentClient.completePayment(paymentId);
+        rabbitTemplate.convertAndSend(RabbitMQPaymentConfig.EXCHANGE, RabbitMQPaymentConfig.ROUTING_KEY, event);
+
+        order.transitionTo(OrderStatus.PAYMENT_PENDING);
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
+    @Transactional
+    public void confirmPayment(Long orderId, Long paymentId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
         order.assignPayment(paymentId);
         order.transitionTo(OrderStatus.CONFIRMED);
         orderRepository.save(order);
+        kafkaTemplate.send(
+                orderDeliveriesTopic,
+                String.valueOf(orderId),
+                new OrderPaymentSucceededEvent(
+                        orderId,
+                        new OrderPaymentSucceededEvent.DeliveryAddress(
+                                order.getDeliveryAddress().getStreet(),
+                                order.getDeliveryAddress().getCity(),
+                                order.getDeliveryAddress().getPostalCode(),
+                                order.getDeliveryAddress().getCountry()
+                        )
+                )
+        );
+    }
 
-        return paymentResponse;
+    @Transactional
+    public void cancelPayment(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        order.transitionTo(OrderStatus.CANCELLED);
+        orderRepository.save(order);
     }
 
     @Transactional

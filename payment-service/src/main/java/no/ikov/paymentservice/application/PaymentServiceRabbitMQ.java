@@ -10,6 +10,8 @@ import no.ikov.paymentservice.infrastructure.dto.PaymentRequest;
 import no.ikov.paymentservice.infrastructure.dto.PaymentResponse;
 import no.ikov.paymentservice.infrastructure.dto.UpdatePaymentStatusRequest;
 import no.ikov.paymentservice.infrastructure.exceptions.PaymentNotFoundException;
+import no.ikov.paymentservice.integration.order.rabbitmq.config.RabbitMQPaymentConfig;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -17,12 +19,34 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Currency;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceRabbitMQ {
 
     private final PaymentRepository paymentRepository;
+    private final RabbitTemplate rabbitTemplate;
+
+    @Transactional
+    public void processPaymentRequest(PaymentRequest request) {
+        PaymentResponse created = createPayment(request);
+
+        UpdatePaymentStatusRequest statusRequest;
+        if (ThreadLocalRandom.current().nextInt(100) < 70) {
+            statusRequest = new UpdatePaymentStatusRequest(PaymentStatus.COMPLETED, UUID.randomUUID().toString());
+        } else {
+            statusRequest = new UpdatePaymentStatusRequest(PaymentStatus.FAILED, null);
+        }
+
+        PaymentResponse result = updateStatus(created.getId(), statusRequest);
+        rabbitTemplate.convertAndSend(
+                RabbitMQPaymentConfig.RESULT_EXCHANGE,
+                RabbitMQPaymentConfig.RESULT_ROUTING_KEY,
+                result
+        );
+    }
 
     @Transactional
     public PaymentResponse createPayment(PaymentRequest request) {

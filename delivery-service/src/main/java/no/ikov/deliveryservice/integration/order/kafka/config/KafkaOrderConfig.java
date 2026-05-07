@@ -32,11 +32,9 @@ public class KafkaOrderConfig {
     @Value("${spring.kafka.consumer.group-id}")
     private String groupId;
 
-    @Value("${kafka.topics.order-deliveries}")
-    private String orderDeliveriesTopic;
-
     @Value("${kafka.topics.delivery-created}")
     private String deliveryCreatedTopic;
+
 
     @Bean
     public ConsumerFactory<String, OrderPaymentSucceededEvent> consumerFactory() {
@@ -70,11 +68,6 @@ public class KafkaOrderConfig {
                 ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class
         );
         return new KafkaTemplate<>(new DefaultKafkaProducerFactory<>(configs));
-    }
-
-    @Bean
-    public NewTopic orderDeliveriesTopic() {
-        return TopicBuilder.name(orderDeliveriesTopic).build();
     }
 
     @Bean

@@ -35,9 +35,6 @@ public class KafkaDeliveryConfig {
     @Value("${kafka.topics.order-deliveries}")
     private String orderDeliveriesTopic;
 
-    @Value("${kafka.topics.delivery-created}")
-    private String deliveryCreatedTopic;
-
     @Bean
     public ConsumerFactory<String, DeliveryCreatedEvent> consumerFactory() {
         Map<String, Object> configs = Map.of(
@@ -75,10 +72,5 @@ public class KafkaDeliveryConfig {
     @Bean
     public NewTopic orderDeliveriesTopic() {
         return TopicBuilder.name(orderDeliveriesTopic).build();
-    }
-
-    @Bean
-    public NewTopic deliveryCreatedTopic() {
-        return TopicBuilder.name(deliveryCreatedTopic).build();
     }
 }
