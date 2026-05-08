@@ -1,13 +1,18 @@
 package no.ikov.orderservice.async.entity;
 
-import lombok.Data;
+import lombok.*;
 
 import java.io.Serializable;
 
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode
+@ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class AsyncMessageCompoundId implements Serializable {
 
-    private final String id;
-    private final String topic;
+    private String id;
+    private String topic;
 
 }
