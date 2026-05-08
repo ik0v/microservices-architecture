@@ -70,6 +70,16 @@ public class KafkaDeliveryConfig {
     }
 
     @Bean
+    public KafkaTemplate<String, String> stringKafkaTemplate() {
+        Map<String, Object> configs = Map.of(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers,
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class
+        );
+        return new KafkaTemplate<>(new DefaultKafkaProducerFactory<>(configs));
+    }
+
+    @Bean
     public NewTopic orderDeliveriesTopic() {
         return TopicBuilder.name(orderDeliveriesTopic).build();
     }
