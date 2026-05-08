@@ -59,6 +59,8 @@ public class KafkaDeliveryConfig {
         return factory;
     }
 
+    // Kept for reference — typed template was used before the outbox pattern was introduced,
+    // when OrderService published directly to Kafka via kafkaTemplate.send(..., OrderPaymentSucceededEvent).
     @Bean
     public KafkaTemplate<String, OrderPaymentSucceededEvent> kafkaTemplate() {
         Map<String, Object> configs = Map.of(

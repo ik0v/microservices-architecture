@@ -24,7 +24,7 @@ public class AsyncMessage extends PersistableEntity<AsyncMessageCompoundId> {
 
     private String headers;
 
-    @Column(nullable = false)
+    @Column(name = "message_value", nullable = false)
     private String value;
 
     @Enumerated(EnumType.STRING)

@@ -15,6 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class OutboxProcessor {
 
     private final AsyncMessageRepo repo;
+
+    // KafkaTemplate<String, String> is used because AsyncMessage.value is already serialized JSON.
+    // Type safety is enforced earlier — in OrderService when the event is constructed and serialized.
+    // This keeps OutboxProcessor generic: it handles any event type without modification.
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Transactional
