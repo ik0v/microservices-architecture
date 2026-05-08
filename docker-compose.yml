@@ -1,0 +1,57 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4.2.0-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # for clients connection
+      - "15672:15672" # for admin connection
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+  kafka:
+    image: bitnamilegacy/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      # Explicitly enable KRaft mode (no ZooKeeper)
+      KAFKA_ENABLE_KRAFT: yes
+      # Unique ID for this broker node
+      KAFKA_CFG_NODE_ID: 1
+      # This node acts as both broker (handles messages) and controller (handles cluster metadata)
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      # Three listeners: PLAINTEXT for Docker-internal, EXTERNAL for host machine, CONTROLLER for KRaft
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:9093,CONTROLLER://:9094
+      # Docker-internal clients (kafka-ui) use kafka:9092; host clients (Spring services) use localhost:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9093
+      # Maps each listener name to its security protocol (PLAINTEXT = no TLS)
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      # Listener used for broker-to-broker communication
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Cluster voters for KRaft consensus — format: nodeId@host:port
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9094
+      # Tells Kafka which listener is used for controller communication
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # Auto-create topics on first message (convenient for development)
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+    volumes:
+      - kafka_data:/bitnami/kafka
+    restart: unless-stopped
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+    restart: unless-stopped
+volumes:
+  rabbitmq_data:
+  kafka_data:

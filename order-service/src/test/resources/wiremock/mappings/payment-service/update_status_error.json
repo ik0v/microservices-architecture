@@ -1,0 +1,9 @@
+{
+  "request": {
+    "method": "PATCH",
+    "url": "/api/payments/2/status"
+  },
+  "response": {
+    "status": 500
+  }
+}
