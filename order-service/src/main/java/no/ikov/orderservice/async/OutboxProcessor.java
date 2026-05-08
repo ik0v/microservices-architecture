@@ -31,7 +31,9 @@ public class OutboxProcessor {
                     .get();
             message.setStatus(AsyncMessageStatus.SENT);
             repo.save(message);
+            log.info("Outbox relay: message [{}] sent to topic [{}] and marked SENT", message.getId().getId(), message.getTopic());
         } catch (Exception e) {
+            log.error("Outbox relay: failed to send message [{}] — {}", message.getId().getId(), e.getMessage());
             throw new OutboxMessageException("Error processing outbox message '%s'".formatted(message.getId()), e);
         }
     }

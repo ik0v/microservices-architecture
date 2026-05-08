@@ -28,6 +28,10 @@ public class OutboxScheduler {
                 AsyncMessageStatus.CREATED,
                 Pageable.ofSize(BATCH_SIZE)
         );
+        if (messages.isEmpty()) {
+            return;
+        }
+        log.info("Outbox relay: found {} pending message(s)", messages.size());
         for (AsyncMessage message : messages) {
             processor.sendMessage(message);
         }
