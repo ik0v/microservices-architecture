@@ -16,9 +16,9 @@ import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
 import no.ikov.orderservice.infrastructure.exceptions.OrderAlreadyPaidException;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
-import no.ikov.orderservice.integration.payment.feign.PaymentClient;
+import no.ikov.orderservice.integration.payment.rabbitmq.config.RabbitMQPaymentConfig;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
-import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,10 +28,10 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class OrderService {
+public class OrderServiceRabbitMQImpl {
 
     private final OrderRepository orderRepository;
-    private final PaymentClient paymentClient;
+    private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -88,7 +88,7 @@ public class OrderService {
     }
 
     @Transactional
-    public PaymentClientResponse payOrder(Long id, PayOrderRequest request) {
+    public OrderResponse payOrder(Long id, PayOrderRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
 
@@ -96,7 +96,7 @@ public class OrderService {
             throw new OrderAlreadyPaidException(id);
         }
 
-        PaymentClientRequest paymentRequest = new PaymentClientRequest(
+        PaymentClientRequest event = new PaymentClientRequest(
                 order.getId(),
                 order.getCustomerId(),
                 new PaymentClientRequest.PriceRequest(
@@ -106,13 +106,10 @@ public class OrderService {
                 request.paymentMethod().name()
         );
 
-        Long paymentId = paymentClient.createPayment(paymentRequest).id();
-        PaymentClientResponse paymentResponse = paymentClient.completePayment(paymentId);
-        order.assignPayment(paymentId);
-        order.transitionTo(OrderStatus.CONFIRMED);
-        orderRepository.save(order);
+        rabbitTemplate.convertAndSend(RabbitMQPaymentConfig.EXCHANGE, RabbitMQPaymentConfig.ROUTING_KEY, event);
 
-        return paymentResponse;
+        order.transitionTo(OrderStatus.PAYMENT_PENDING);
+        return OrderResponse.from(orderRepository.save(order));
     }
 
     @Transactional

@@ -1,7 +1,7 @@
 package no.ikov.orderservice.infrastructure;
 
 import lombok.RequiredArgsConstructor;
-import no.ikov.orderservice.application.OrderService;
+import no.ikov.orderservice.application.OrderServiceRabbitMQImpl;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderResponse;
 import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
@@ -30,7 +30,7 @@ import java.net.URI;
 @RequiredArgsConstructor
 public class OrderController implements OrderControllerApi {
 
-    private final OrderService orderService;
+    private final OrderServiceRabbitMQImpl orderService;
 
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@RequestBody @Valid OrderRequest request) {

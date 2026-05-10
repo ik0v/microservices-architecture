@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "/api/payments",
+    "bodyPatterns": [
+      { "matchesJsonPath": "$[?(@.orderId == 1)]" }
+    ]
+  },
+  "response": {
+    "status": 201,
+    "bodyFileName": "payment-service/created_payment_completed.json",
+    "headers": { "Content-Type": "application/json" }
+  }
+}
