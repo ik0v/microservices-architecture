@@ -5,6 +5,7 @@ import no.ikov.orderservice.application.OrderService;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderResponse;
 import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
+import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
@@ -40,7 +41,7 @@ public class OrderController implements OrderControllerApi {
     }
 
     @PostMapping("/{id}/pay")
-    public ResponseEntity<OrderResponse> payOrder(@PathVariable Long id, @RequestBody @Valid PayOrderRequest request) {
+    public ResponseEntity<PaymentClientResponse> payOrder(@PathVariable Long id, @RequestBody @Valid PayOrderRequest request) {
         return ResponseEntity.ok(orderService.payOrder(id, request));
     }
 
