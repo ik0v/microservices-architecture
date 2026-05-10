@@ -6,10 +6,16 @@ import no.ikov.deliveryservice.domain.model.DeliveryAddress;
 import no.ikov.deliveryservice.infrastructure.dto.DeliveryResponse;
 import no.ikov.deliveryservice.integration.order.kafka.event.DeliveryCreatedEvent;
 import no.ikov.deliveryservice.integration.order.kafka.event.OrderPaymentSucceededEvent;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -35,10 +41,13 @@ public class OrderEventListener {
                         event.deliveryAddress().country()
                 )
         );
-        kafkaTemplate.send(
+        ProducerRecord<String, DeliveryCreatedEvent> record = new ProducerRecord<>(
                 deliveryCreatedTopic,
+                null,
                 String.valueOf(delivery.getId()),
-                new DeliveryCreatedEvent(delivery.getId(), event.orderId())
+                new DeliveryCreatedEvent(delivery.getId(), event.orderId()),
+                List.of(new RecordHeader("X-Idempotency-Key", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)))
         );
+        kafkaTemplate.send(record);
     }
 }
