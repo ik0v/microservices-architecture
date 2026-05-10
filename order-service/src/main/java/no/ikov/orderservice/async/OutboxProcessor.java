@@ -1,0 +1,40 @@
+package no.ikov.orderservice.async;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import no.ikov.orderservice.async.entity.AsyncMessage;
+import no.ikov.orderservice.async.entity.AsyncMessageStatus;
+import no.ikov.orderservice.infrastructure.exceptions.OutboxMessageException;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class OutboxProcessor {
+
+    private final AsyncMessageRepo repo;
+
+    // KafkaTemplate<String, String> is used because AsyncMessage.value is already serialized JSON.
+    // Type safety is enforced earlier — in OrderService when the event is constructed and serialized.
+    // This keeps OutboxProcessor generic: it handles any event type without modification.
+    private final KafkaTemplate<String, String> kafkaTemplate;
+
+    @Transactional
+    public void sendMessage(AsyncMessage message) {
+        try {
+            kafkaTemplate.send(message.getTopic(), message.getId().getId(), message.getValue())
+                    .exceptionally(e -> {
+                        throw new OutboxMessageException("Error sending outbox message '%s'".formatted(message.getId()), e);
+                    })
+                    .get();
+            message.setStatus(AsyncMessageStatus.SENT);
+            repo.save(message);
+            log.info("Outbox relay: message [{}] sent to topic [{}] and marked SENT", message.getId().getId(), message.getTopic());
+        } catch (Exception e) {
+            log.error("Outbox relay: failed to send message [{}] — {}", message.getId().getId(), e.getMessage());
+            throw new OutboxMessageException("Error processing outbox message '%s'".formatted(message.getId()), e);
+        }
+    }
+}

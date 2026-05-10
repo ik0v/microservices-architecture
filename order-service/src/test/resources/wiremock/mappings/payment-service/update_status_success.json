@@ -1,0 +1,11 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "/api/payments/1/status"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "payment-service/updated_payment_completed.json",
+    "headers": { "Content-Type": "application/json" }
+  }
+}

@@ -52,7 +52,7 @@ public class Delivery {
         this.orderId = orderId;
         this.deliveryAddress = deliveryAddress;
         this.estimatedDeliveryAt = estimatedDeliveryAt;
-        this.status = DeliveryStatus.PENDING;
+        this.status = DeliveryStatus.CREATED;
     }
 
     public void transitionTo(DeliveryStatus newStatus) {
