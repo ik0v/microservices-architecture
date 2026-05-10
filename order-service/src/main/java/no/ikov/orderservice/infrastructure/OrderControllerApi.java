@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import no.ikov.orderservice.infrastructure.dto.OrderRequest;
 import no.ikov.orderservice.infrastructure.dto.OrderResponse;
 import no.ikov.orderservice.infrastructure.dto.PayOrderRequest;
+import no.ikov.orderservice.integration.payment.dto.PaymentClientResponse;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderAddressRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
@@ -114,7 +115,7 @@ public interface OrderControllerApi {
                     )
             }
     )
-    ResponseEntity<OrderResponse> payOrder(@PathVariable Long id, @Valid PayOrderRequest request);
+    ResponseEntity<PaymentClientResponse> payOrder(@PathVariable Long id, @Valid PayOrderRequest request);
 
     @Operation(
             summary = "Update order status",

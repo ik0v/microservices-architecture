@@ -26,3 +26,62 @@ spring:
 payment:
   service:
     url: http://localhost:8082
+
+resilience4j:
+  bulkhead:
+    instances:
+      paymentService:
+        # Max number of concurrent calls allowed to payment-service
+        max-concurrent-calls: 5
+        # Don't queue — reject immediately if all slots are taken
+        max-wait-duration: 0
+  ratelimiter:
+    instances:
+      paymentService:
+        # How many calls are allowed per refresh period
+        limit-for-period: 5
+        # The window resets every second
+        limit-refresh-period: 1s
+        # Don't queue — reject immediately if the limit is reached
+        timeout-duration: 0
+  retry:
+    instances:
+      paymentService:
+        # Total attempts including the first call
+        max-attempts: 3
+        # Fixed delay between attempts
+        wait-duration: 500ms
+        # Only retry on transient failures (503) — not on business errors or open-circuit exceptions
+        retry-exceptions:
+          - no.ikov.orderservice.infrastructure.exceptions.PaymentTransientException
+        ignore-exceptions:
+          - io.github.resilience4j.bulkhead.BulkheadFullException
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - no.ikov.orderservice.infrastructure.exceptions.PaymentServiceException
+  circuitbreaker:
+    instances:
+      paymentService:
+        # Percentage of failed calls that triggers the circuit to OPEN
+        failure-rate-threshold: 50
+        # Minimum number of calls required before failure rate is calculated
+        # Prevents tripping on the very first call
+        minimum-number-of-calls: 6
+        # Number of calls tracked in the sliding window to compute the failure rate
+        sliding-window-size: 6
+        # How long the circuit stays OPEN before transitioning to HALF-OPEN to test recovery
+        wait-duration-in-open-state: 8s
+        # Number of test calls allowed in HALF-OPEN state
+        # If enough succeed → CLOSED; if too many fail → back to OPEN
+        permitted-number-of-calls-in-half-open-state: 3
+        # COUNT_BASED: window tracks last N calls; TIME_BASED: tracks calls in last N seconds
+        sliding-window-type: COUNT_BASED
+        # These exceptions increment the failure counter and contribute to tripping the circuit
+        record-exceptions:
+          - java.lang.RuntimeException
+          - java.io.IOException
+          - feign.FeignException
+        # These are expected business outcomes — do not count as failures
+        ignore-exceptions:
+          - no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException
+          - no.ikov.orderservice.infrastructure.exceptions.OrderAlreadyPaidException

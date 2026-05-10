@@ -1,16 +1,17 @@
 package no.ikov.paymentservice.application;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import no.ikov.paymentservice.domain.model.Payment;
-import no.ikov.paymentservice.domain.model.PaymentMethod;
-import no.ikov.paymentservice.domain.model.Price;
 import no.ikov.paymentservice.domain.model.PaymentStatus;
+import no.ikov.paymentservice.domain.model.Price;
 import no.ikov.paymentservice.domain.repository.PaymentRepository;
 import no.ikov.paymentservice.domain.repository.PaymentSpecification;
 import no.ikov.paymentservice.infrastructure.dto.PaymentRequest;
 import no.ikov.paymentservice.infrastructure.dto.PaymentResponse;
 import no.ikov.paymentservice.infrastructure.dto.UpdatePaymentStatusRequest;
 import no.ikov.paymentservice.infrastructure.exceptions.PaymentNotFoundException;
+import no.ikov.paymentservice.infrastructure.exceptions.PaymentServiceUnavailableException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,8 +24,11 @@ import java.util.Currency;
 @RequiredArgsConstructor
 public class PaymentService {
 
+    private static final String CIRCUIT_BREAKER_NAME = "paymentServiceInternal";
+
     private final PaymentRepository paymentRepository;
 
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "createPaymentFallback")
     @Transactional
     public PaymentResponse createPayment(PaymentRequest request) {
         Price price = new Price(
@@ -40,6 +44,7 @@ public class PaymentService {
         return PaymentResponse.from(paymentRepository.save(payment));
     }
 
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "updateStatusFallback")
     @Transactional
     public PaymentResponse updateStatus(Long id, UpdatePaymentStatusRequest request) {
         Payment payment = paymentRepository.findById(id)
@@ -80,5 +85,13 @@ public class PaymentService {
             throw new PaymentNotFoundException(id);
         }
         paymentRepository.deleteById(id);
+    }
+
+    private PaymentResponse createPaymentFallback(PaymentRequest request, Throwable ex) {
+        throw new PaymentServiceUnavailableException("Payment service is currently unavailable");
+    }
+
+    private PaymentResponse updateStatusFallback(Long id, UpdatePaymentStatusRequest request, Throwable ex) {
+        throw new PaymentServiceUnavailableException("Payment service is currently unavailable");
     }
 }
