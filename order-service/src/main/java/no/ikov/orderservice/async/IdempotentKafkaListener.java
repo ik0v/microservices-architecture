@@ -9,7 +9,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
@@ -21,7 +20,6 @@ public abstract class IdempotentKafkaListener<T> {
     protected final AsyncMessageRepo asyncMessageRepo;
     protected final JsonMapper jsonMapper;
 
-    @Transactional
     protected void process(ConsumerRecord<String, T> record, Acknowledgment acknowledgment) {
         String key = extractIdempotencyKey(record);
 
