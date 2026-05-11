@@ -32,7 +32,7 @@ public abstract class IdempotentKafkaListener<T> {
                 .build();
 
         try {
-            asyncMessageRepo.save(consumedMessage);
+            asyncMessageRepo.saveAndFlush(consumedMessage);
         } catch (DataIntegrityViolationException e) {
             log.warn("Duplicate message skipped — key: {}, topic: {}", key, record.topic());
             acknowledgment.acknowledge();

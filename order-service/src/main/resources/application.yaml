@@ -37,6 +37,8 @@ spring:
       properties:
         spring.json.trusted.packages: "*"
         spring.json.value.default.type: "no.ikov.orderservice.integration.delivery.kafka.event.DeliveryCreatedEvent"
+    listener:
+      ack-mode: manual
 
 kafka:
   topics:

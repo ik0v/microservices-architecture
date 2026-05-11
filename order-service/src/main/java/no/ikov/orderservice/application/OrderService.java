@@ -105,6 +105,9 @@ public class OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
 
+//        business-level guard — complements infrastructure-level
+//        dedup in the payment listener
+
         if (order.getPaymentId() != null) {
             throw new OrderAlreadyPaidException(id);
         }
