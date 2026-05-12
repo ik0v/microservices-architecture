@@ -107,6 +107,12 @@ public class DeliveryService {
     }
 
     @Transactional
+    public Delivery createDeliveryFromSaga(Long orderId, DeliveryAddress address) {
+        Delivery delivery = new Delivery(orderId, address, LocalDateTime.now().plusDays(3));
+        return deliveryRepository.save(delivery);
+    }
+
+    @Transactional
     public void deleteDelivery(Long id) {
         if (!deliveryRepository.existsById(id)) {
             throw new DeliveryNotFoundException(id);
