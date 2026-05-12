@@ -3,19 +3,20 @@ package no.ikov.orderservice.integration.saga.ordercreation.event;
 import lombok.Builder;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Builder
 public record OrderCreationStatusMessage(
-        UUID orderId,
+        Long orderId,
+        Long customerId,
         OrderCreationStatus status,
         BigDecimal amount,
         String currency,
+        String paymentMethod,
         String street,
         String city,
         String postalCode,
         String country,
-        UUID paymentId,
-        UUID deliveryId
+        Long paymentId,
+        Long deliveryId
 ) {
 }

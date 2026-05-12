@@ -163,6 +163,32 @@ public class OrderService {
     }
 
     @Transactional
+    public void onPaymentConfirmed(Long orderId, Long paymentId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        order.assignPayment(paymentId);
+        order.transitionTo(OrderStatus.CONFIRMED);
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void onDeliveryCreated(Long orderId, Long deliveryId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        order.assignDelivery(deliveryId);
+        order.transitionTo(OrderStatus.IN_DELIVERY);
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void cancelOrderFromSaga(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        order.transitionTo(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+    }
+
+    @Transactional
     public void deleteOrder(Long id) {
         if (!orderRepository.existsById(id)) {
             throw new OrderNotFoundException(id);
