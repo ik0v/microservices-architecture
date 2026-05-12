@@ -1,0 +1,9 @@
+resilience4j:
+  retry:
+    instances:
+      paymentService:
+        wait-duration: 0ms
+  circuitbreaker:
+    instances:
+      paymentService:
+        minimum-number-of-calls: 100

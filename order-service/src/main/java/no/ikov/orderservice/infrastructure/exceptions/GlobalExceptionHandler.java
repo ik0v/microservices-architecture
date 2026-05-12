@@ -1,5 +1,6 @@
 package no.ikov.orderservice.infrastructure.exceptions;
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -29,6 +30,20 @@ public class GlobalExceptionHandler {
     public ProblemDetail handlePaymentServiceException(PaymentServiceException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_GATEWAY);
         problem.setDetail(ex.getMessage());
+        return problem;
+    }
+
+    @ExceptionHandler(PaymentTransientException.class)
+    public ProblemDetail handlePaymentTransient(PaymentTransientException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problem.setDetail("Payment service unavailable after all retry attempts");
+        return problem;
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ProblemDetail handleCircuitOpen(CallNotPermittedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problem.setDetail("Payment service circuit is open, try again later");
         return problem;
     }
 
