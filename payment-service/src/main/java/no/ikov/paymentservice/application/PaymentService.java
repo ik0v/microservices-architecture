@@ -2,6 +2,7 @@ package no.ikov.paymentservice.application;
 
 import lombok.RequiredArgsConstructor;
 import no.ikov.paymentservice.domain.model.Payment;
+import no.ikov.paymentservice.domain.model.PaymentMethod;
 import no.ikov.paymentservice.domain.model.PaymentStatus;
 import no.ikov.paymentservice.domain.model.Price;
 import no.ikov.paymentservice.domain.repository.PaymentRepository;
@@ -95,6 +96,29 @@ public class PaymentService {
                 .and(PaymentSpecification.hasOrderId(orderId))
                 .and(PaymentSpecification.hasStatus(status));
         return paymentRepository.findAll(spec, pageable).map(PaymentResponse::from);
+    }
+
+    @Transactional
+    public Payment createAndProcessPayment(Long orderId, Long customerId, java.math.BigDecimal amount, String currency, String paymentMethod) {
+        Price price = new Price(amount, Currency.getInstance(currency));
+        Payment payment = new Payment(orderId, customerId, price, PaymentMethod.valueOf(paymentMethod));
+        payment = paymentRepository.save(payment);
+        if (ThreadLocalRandom.current().nextInt(100) < 70) {
+            payment.complete(UUID.randomUUID().toString());
+        } else {
+            payment.fail();
+        }
+        return paymentRepository.save(payment);
+    }
+
+    @Transactional
+    public void refundByOrderId(Long orderId) {
+        paymentRepository.findByOrderId(orderId).ifPresent(payment -> {
+            if (payment.getStatus() == PaymentStatus.COMPLETED) {
+                payment.refund();
+                paymentRepository.save(payment);
+            }
+        });
     }
 
     @Transactional
