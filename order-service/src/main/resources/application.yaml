@@ -44,6 +44,7 @@ kafka:
   topics:
     order-deliveries: order-deliveries
     delivery-created: delivery-created
+    order-creation-status: order.creation.status
 
 payment:
   service:
