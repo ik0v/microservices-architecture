@@ -3,8 +3,8 @@ package no.ikov.paymentservice.application;
 import lombok.RequiredArgsConstructor;
 import no.ikov.paymentservice.domain.model.Payment;
 import no.ikov.paymentservice.domain.model.PaymentMethod;
-import no.ikov.paymentservice.domain.model.Price;
 import no.ikov.paymentservice.domain.model.PaymentStatus;
+import no.ikov.paymentservice.domain.model.Price;
 import no.ikov.paymentservice.domain.repository.PaymentRepository;
 import no.ikov.paymentservice.domain.repository.PaymentSpecification;
 import no.ikov.paymentservice.infrastructure.dto.PaymentRequest;
@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Currency;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -75,10 +77,35 @@ public class PaymentService {
     }
 
     @Transactional
+    public Payment createAndProcessPayment(Long orderId, Long customerId, java.math.BigDecimal amount, String currency, String paymentMethod) {
+        Price price = new Price(amount, Currency.getInstance(currency));
+        Payment payment = new Payment(orderId, customerId, price, PaymentMethod.valueOf(paymentMethod));
+        payment = paymentRepository.save(payment);
+        if (ThreadLocalRandom.current().nextInt(100) < 90) {
+            payment.complete(UUID.randomUUID().toString());
+        } else {
+            payment.fail();
+        }
+        return paymentRepository.save(payment);
+    }
+
+    @Transactional
+    public void refundByOrderId(Long orderId) {
+        paymentRepository.findByOrderId(orderId).ifPresent(payment -> {
+            if (payment.getStatus() == PaymentStatus.COMPLETED) {
+                payment.refund();
+                paymentRepository.save(payment);
+            }
+        });
+    }
+
+    @Transactional
     public void deletePayment(Long id) {
         if (!paymentRepository.existsById(id)) {
             throw new PaymentNotFoundException(id);
         }
         paymentRepository.deleteById(id);
     }
+
+
 }

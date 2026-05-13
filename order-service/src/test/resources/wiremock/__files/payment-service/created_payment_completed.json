@@ -1,0 +1,13 @@
+{
+  "id": 1,
+  "orderId": 42,
+  "customerId": 7,
+  "price": {
+    "amount": 185.00,
+    "currency": "USD"
+  },
+  "status": "COMPLETED",
+  "method": "CREDIT_CARD",
+  "transactionId": "txn-abc-123"
+}
+

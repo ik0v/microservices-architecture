@@ -40,6 +40,13 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(PaymentServiceUnavailableException.class)
+    public ProblemDetail handleServiceUnavailable(PaymentServiceUnavailableException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problem.setDetail(ex.getMessage());
+        return problem;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
         List<String> errors = ex.getBindingResult().getFieldErrors().stream()

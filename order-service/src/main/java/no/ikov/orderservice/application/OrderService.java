@@ -1,6 +1,7 @@
 package no.ikov.orderservice.application;
 
 import lombok.RequiredArgsConstructor;
+import no.ikov.orderservice.async.AsyncMessageRepo;
 import no.ikov.orderservice.domain.model.DeliveryAddress;
 import no.ikov.orderservice.domain.model.Order;
 import no.ikov.orderservice.domain.model.OrderItem;
@@ -16,10 +17,12 @@ import no.ikov.orderservice.infrastructure.dto.UpdateOrderItemsRequest;
 import no.ikov.orderservice.infrastructure.dto.UpdateOrderStatusRequest;
 import no.ikov.orderservice.infrastructure.exceptions.OrderAlreadyPaidException;
 import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
-import no.ikov.orderservice.integration.payment.client.feign.PaymentClient;
-import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
+import no.ikov.orderservice.integration.saga.ordercreation.event.OrderCreationStatus;
+import no.ikov.orderservice.integration.saga.ordercreation.event.OrderCreationStatusMessage;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +33,11 @@ import java.util.List;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final PaymentClient paymentClient;
+    private final KafkaTemplate<String, OrderCreationStatusMessage> sagaKafkaTemplate;
+
+
+    @Value("${kafka.topics.order-creation-status}")
+    private String orderCreationStatusTopic;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -91,25 +98,64 @@ public class OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
 
+//        business-level guard — complements infrastructure-level
+//        dedup in the payment listener
+
         if (order.getPaymentId() != null) {
             throw new OrderAlreadyPaidException(id);
         }
 
-        PaymentClientRequest paymentRequest = new PaymentClientRequest(
-                order.getId(),
-                order.getCustomerId(),
-                new PaymentClientRequest.PriceRequest(
-                        order.getTotalPrice().getAmount(),
-                        order.getTotalPrice().getCurrency().getCurrencyCode()
-                ),
-                request.paymentMethod().name()
-        );
+        sagaKafkaTemplate.send(orderCreationStatusTopic,
+                OrderCreationStatusMessage.builder()
+                .orderId(order.getId())
+                .customerId(order.getCustomerId())
+                .status(OrderCreationStatus.ORDER_CREATED)
+                .amount(order.getTotalPrice().getAmount())
+                .currency(order.getTotalPrice().getCurrency().getCurrencyCode())
+                .paymentMethod(request.paymentMethod().name())
+                .street(order.getDeliveryAddress().getStreet())
+                .city(order.getDeliveryAddress().getCity())
+                .postalCode(order.getDeliveryAddress().getPostalCode())
+                .country(order.getDeliveryAddress().getCountry())
+                .build());
 
-        Long paymentId = paymentClient.createPayment(paymentRequest).id();
+        order.transitionTo(OrderStatus.PAYMENT_PENDING);
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
+
+    @Transactional
+    public void cancelPayment(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        order.transitionTo(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void onPaymentConfirmed(Long orderId, Long paymentId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
         order.assignPayment(paymentId);
         order.transitionTo(OrderStatus.CONFIRMED);
+        orderRepository.save(order);
+    }
 
-        return OrderResponse.from(orderRepository.save(order));
+    @Transactional
+    public void onDeliveryCreated(Long orderId, Long deliveryId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        order.assignDelivery(deliveryId);
+        order.transitionTo(OrderStatus.IN_DELIVERY);
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void cancelOrderFromSaga(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        order.transitionTo(OrderStatus.CANCELLED);
+        orderRepository.save(order);
     }
 
     @Transactional
