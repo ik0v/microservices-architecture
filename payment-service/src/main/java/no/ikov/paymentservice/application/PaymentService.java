@@ -103,7 +103,7 @@ public class PaymentService {
         Price price = new Price(amount, Currency.getInstance(currency));
         Payment payment = new Payment(orderId, customerId, price, PaymentMethod.valueOf(paymentMethod));
         payment = paymentRepository.save(payment);
-        if (ThreadLocalRandom.current().nextInt(100) < 70) {
+        if (ThreadLocalRandom.current().nextInt(100) < 90) {
             payment.complete(UUID.randomUUID().toString());
         } else {
             payment.fail();

@@ -23,10 +23,13 @@ import no.ikov.orderservice.infrastructure.exceptions.OrderNotFoundException;
 import no.ikov.orderservice.integration.delivery.kafka.event.OrderPaymentSucceededEvent;
 import no.ikov.orderservice.integration.payment.rabbitmq.config.RabbitMQPaymentConfig;
 import no.ikov.orderservice.integration.payment.dto.PaymentClientRequest;
+import no.ikov.orderservice.integration.saga.ordercreation.event.OrderCreationStatus;
+import no.ikov.orderservice.integration.saga.ordercreation.event.OrderCreationStatusMessage;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
@@ -42,9 +45,13 @@ public class OrderService {
     private final RabbitTemplate rabbitTemplate;
     private final AsyncMessageRepo asyncMessageRepo;
     private final JsonMapper mapper;
+    private final KafkaTemplate<String, OrderCreationStatusMessage> sagaKafkaTemplate;
 
     @Value("${kafka.topics.order-deliveries}")
     private String orderDeliveriesTopic;
+
+    @Value("${kafka.topics.order-creation-status}")
+    private String orderCreationStatusTopic;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -122,7 +129,21 @@ public class OrderService {
                 request.paymentMethod().name()
         );
 
-        rabbitTemplate.convertAndSend(RabbitMQPaymentConfig.EXCHANGE, RabbitMQPaymentConfig.ROUTING_KEY, event);
+        // rabbitTemplate.convertAndSend(RabbitMQPaymentConfig.EXCHANGE, RabbitMQPaymentConfig.ROUTING_KEY, event);
+
+        sagaKafkaTemplate.send(orderCreationStatusTopic,
+                OrderCreationStatusMessage.builder()
+                .orderId(order.getId())
+                .customerId(order.getCustomerId())
+                .status(OrderCreationStatus.ORDER_CREATED)
+                .amount(order.getTotalPrice().getAmount())
+                .currency(order.getTotalPrice().getCurrency().getCurrencyCode())
+                .paymentMethod(request.paymentMethod().name())
+                .street(order.getDeliveryAddress().getStreet())
+                .city(order.getDeliveryAddress().getCity())
+                .postalCode(order.getDeliveryAddress().getPostalCode())
+                .country(order.getDeliveryAddress().getCountry())
+                .build());
 
         order.transitionTo(OrderStatus.PAYMENT_PENDING);
         return OrderResponse.from(orderRepository.save(order));
