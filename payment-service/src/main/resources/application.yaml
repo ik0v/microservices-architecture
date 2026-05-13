@@ -20,10 +20,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-  rabbitmq:
-    addresses: amqp://localhost:5672
-    username: admin
-    password: admin
   kafka:
     bootstrap-servers: localhost:9093
     producer:
